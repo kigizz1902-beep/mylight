@@ -129,6 +129,102 @@
   }
 }
 
+/*
+ * Dokkaebi app chrome.
+ * The default range input renders a bright blue fill on a white track — far too
+ * luminous for a screen the worksheet requires to stay dimmer than the room.
+ * `--pct` is set inline from the brightness value to paint the filled portion.
+ */
+.ember-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ember-slider:disabled {
+  cursor: not-allowed;
+}
+
+.ember-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(240, 184, 120, 0.8) 0 var(--pct, 50%),
+    rgba(255, 241, 222, 0.1) var(--pct, 50%) 100%
+  );
+  border: 1px solid rgba(255, 222, 176, 0.12);
+}
+
+.ember-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(240, 184, 120, 0.8) 0 var(--pct, 50%),
+    rgba(255, 241, 222, 0.1) var(--pct, 50%) 100%
+  );
+  border: 1px solid rgba(255, 222, 176, 0.12);
+}
+
+.ember-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 222, 176, 0.4);
+  background: radial-gradient(circle at 40% 35%, #fff2d8, #e8c395 55%, #c8894a);
+  box-shadow: 0 0 12px rgba(240, 184, 120, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.ember-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 222, 176, 0.4);
+  background: radial-gradient(circle at 40% 35%, #fff2d8, #e8c395 55%, #c8894a);
+  box-shadow: 0 0 12px rgba(240, 184, 120, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Keyboard focus must stay visible — several inputs previously set outline: none. */
+.dokkaebi-app :focus-visible {
+  outline: 2px solid rgba(240, 184, 120, 0.85);
+  outline-offset: 3px;
+}
+
+/* Scrollbars for the app's scrollable panes (기록 list, about modal) — the default
+ * OS scrollbar is a bright light-grey bar that breaks the dark/glass look. */
+.dokkaebi-app * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(240, 184, 120, 0.35) transparent;
+}
+
+.dokkaebi-app *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dokkaebi-app *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dokkaebi-app *::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(240, 184, 120, 0.32), rgba(200, 137, 74, 0.22));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.dokkaebi-app *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(240, 184, 120, 0.5), rgba(200, 137, 74, 0.35));
+  background-clip: padding-box;
+}
+
 @keyframes rain-fall {
   0% {
     transform: translateY(0);
@@ -166,6 +262,107 @@
   50% {
     opacity: 0.92;
     transform: scale(1.015);
+  }
+}
+
+@keyframes emberBreath {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes wakePattern {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.55;
+  }
+  26% {
+    opacity: 0.08;
+  }
+  45% {
+    opacity: 0.8;
+  }
+  55% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/*
+ * A single slow breath for the test-tool's night-jump/rain-toggle buttons — distinct
+ * from wakePattern's multi-dip growth-stage animation, which is reserved for the real
+ * "불씨 깨우기" power-on.
+ *
+ * The light falls away quickly, rests dark, then spends the remaining ~70% of the
+ * duration rising back with a gentle catch near the top, so it reads as inhaling
+ * rather than a switch being flipped. Per-keyframe timing functions do the work here:
+ * a single easing across the whole sequence can't make the fall short and the rise long.
+ */
+@keyframes ember-breathe-on {
+  0% {
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.35);
+  }
+  16% {
+    opacity: 0.05;
+    animation-timing-function: linear;
+  }
+  30% {
+    opacity: 0.05;
+    animation-timing-function: cubic-bezier(0.32, 0, 0.24, 1);
+  }
+  72% {
+    opacity: 0.78;
+    animation-timing-function: ease-in-out;
+  }
+  84% {
+    opacity: 0.66;
+    animation-timing-function: ease-in-out;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes ackPulse {
+  0% {
+    opacity: 1;
+  }
+  35% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes rainfall {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: -60px 600px;
+  }
+}
+
+@keyframes fadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
   }
 }
 
