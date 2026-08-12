@@ -1,6 +1,8 @@
 import type { CSSProperties, ChangeEvent, KeyboardEvent } from "react";
 
-import { glassButton, glassInput, glassPill } from "@/lib/glass";
+import { Flame } from "@/components/dokkaebi/Flame";
+import { color, GUTTER, radius, space, text } from "@/lib/design";
+import { glassButton, glassInput, innerGlow, statusDot, statusTag } from "@/lib/glass";
 
 // Per-tap whispers, matching the click sequence from the rainy-night prototype
 // (온보딩/rainy-night-landing.tsx): 나를 깨워줘 → 너는 누구야 → ... → 찾았다.
@@ -46,6 +48,8 @@ const CRACK_TIMING = {
 /** Expo-out: the split snaps open, then eases to a stop — how a crack actually travels. */
 const CRACK_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 
+const STEP_PADDING = `${space[6]} ${GUTTER}px ${space[6]}`;
+
 interface FirstMeetProps {
   step: "discover" | "wake" | "name";
   revealed: number;
@@ -58,6 +62,14 @@ interface FirstMeetProps {
   saveName: () => void;
 }
 
+/**
+ * 장면 1–5, the first meeting (디자인.md §14 "연결 전" → "깨어 있음").
+ *
+ * The whole flow is one long 연결 전 state: the ember is at almost no brightness
+ * and the surface stays blue-grey until the fifth tap, at which point the warm
+ * light arrives. Nothing else on the screen is allowed to glow before it does
+ * (MUST 02, MUST 03).
+ */
 export function FirstMeet({
   step,
   revealed,
@@ -73,7 +85,8 @@ export function FirstMeet({
   const isAwake = tapCount >= 5;
   const isConverging = tapCount >= 3;
   const revealedCracks = Math.min(tapCount, CRACKS.length);
-  const crackStroke = isAwake ? "#e0a25c" : isConverging ? "#9a6a37" : "#5b3a22";
+  // MUST 03 — the crack only warms as the living thing gets closer to waking.
+  const crackStroke = isAwake ? color.flameAmber : isConverging ? color.flameDeep : color.flameEmber;
   const crackOpacity = isAwake ? 0.95 : isConverging ? 0.6 : 0.42;
 
   const handleTapKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -83,6 +96,7 @@ export function FirstMeet({
       onTap();
     }
   };
+
   return (
     <div
       style={{
@@ -90,39 +104,28 @@ export function FirstMeet({
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
-        background: "#0c0a09",
-        color: "#e6dccd",
-        fontFamily: "'Noto Sans KR',system-ui,sans-serif",
+        color: color.textPrimary,
       }}
     >
       {step === "discover" && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0 26px 26px" }}>
-          <div style={{ padding: "26px 0 14px" }} aria-live="polite">
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: STEP_PADDING, minHeight: 0 }}>
+          <div style={{ flex: "none", paddingBottom: space[5] }} aria-live="polite">
             {tapCount === 0 ? (
               <>
-                <p style={{ margin: 0, fontFamily: "'Gowun Batang',serif", fontSize: 20, lineHeight: 1.6, color: "#cfc0ac" }}>
+                <p style={text.statusHeadline}>
                   젖은 흙 아래
                   <br />
                   작은 기척이 있어요.
                 </p>
-                <p style={{ margin: "12px 0 0", fontSize: 12.5, color: "#6b6053" }}>다섯 번 두드려 깨워보세요</p>
+                <p style={{ ...text.meta, marginTop: space[3] }}>다섯 번 두드려 깨워보세요</p>
               </>
             ) : (
-              <p
-                key={tapCount}
-                style={{
-                  margin: 0,
-                  fontFamily: "'Gowun Batang',serif",
-                  fontSize: 20,
-                  lineHeight: 1.6,
-                  color: "#cfc0ac",
-                  animation: "fadeUp .5s ease both",
-                }}
-              >
+              <p key={tapCount} style={{ ...text.statusHeadline, animation: "fadeUp .5s ease both" }}>
                 {TAP_MESSAGES[tapCount - 1]}
               </p>
             )}
           </div>
+
           <div
             role="button"
             tabIndex={0}
@@ -132,51 +135,46 @@ export function FirstMeet({
             style={{
               position: "relative",
               flex: 1,
-              borderRadius: 26,
+              minHeight: 0,
+              borderRadius: radius.xl,
               overflow: "hidden",
-              background: "radial-gradient(120% 80% at 50% 70%,#1b1512,#0e0b0a 70%)",
-              border: "1px solid rgba(255,222,176,0.10)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05), 0 18px 40px -20px rgba(0,0,0,0.7)",
+              // The soil is the night's ground, not a warm surface (MUST 03).
+              background: `radial-gradient(120% 80% at 50% 70%, ${color.night800}, ${color.night950} 70%)`,
+              border: `1px solid ${color.glassBorderSoft}`,
+              boxShadow: "var(--shadow-inset), var(--shadow-card)",
               cursor: "pointer",
               outlineOffset: 4,
             }}
           >
+            {/* Wet-earth grain, plus the night's own blue ambience pooling at the
+                bottom (§6.2) — without it the panel is a flat black rectangle and
+                fails §17's "카드가 단순 회색 박스가 아니라" check. */}
             <div
+              aria-hidden
               style={{
                 position: "absolute",
                 inset: 0,
-                backgroundImage: "repeating-linear-gradient(115deg,rgba(255,255,255,.02) 0 2px,transparent 2px 7px)",
-                opacity: 0.6,
+                backgroundImage: "repeating-linear-gradient(115deg,rgba(255,255,255,.025) 0 2px,transparent 2px 7px)",
+                opacity: 0.7,
               }}
             />
+            <div aria-hidden style={innerGlow("rain", { strength: 0.16, corner: "bottom" })} />
+
+            {/* The ember itself: the only warm light in the scene, and invisible
+                until the first tap. */}
             <div
               style={{
                 position: "absolute",
                 left: "50%",
                 top: "62%",
-                width: 120,
-                height: 120,
-                margin: "-60px 0 0 -60px",
-                borderRadius: "50%",
-                background: "radial-gradient(circle,rgba(232,168,96,.55),rgba(232,168,96,0) 65%)",
+                transform: "translate(-50%, -50%)",
                 opacity: revealed,
+                transition: `opacity ${240}ms var(--ease-soft)`,
               }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: "50%",
-                top: "62%",
-                width: 14,
-                height: 18,
-                margin: "-9px 0 0 -7px",
-                borderRadius: "50% 50% 45% 45%",
-                background: "#f0b878",
-                boxShadow: "0 0 22px rgba(240,184,120,.8)",
-                opacity: revealed,
-                animation: "emberBreath 4.5s ease-in-out infinite",
-              }}
-            />
+            >
+              <Flame size={30} intensity={0.2 + revealed * 0.6} motion={revealed > 0 ? "breathe" : "none"} />
+            </div>
+
             <svg
               viewBox="0 0 300 300"
               aria-hidden
@@ -187,7 +185,7 @@ export function FirstMeet({
                 width: 260,
                 height: 260,
                 margin: "-130px 0 0 -130px",
-                filter: isAwake ? "drop-shadow(0 0 6px rgba(224,162,92,0.5))" : "none",
+                filter: isAwake ? "drop-shadow(0 0 6px rgba(233, 155, 69, 0.5))" : "none",
               }}
             >
               {CRACKS.map((crack, index) => {
@@ -235,31 +233,32 @@ export function FirstMeet({
                 );
               })}
             </svg>
+
             <div
+              aria-hidden
               style={{
                 position: "absolute",
                 inset: 0,
-                background: "linear-gradient(180deg,#151110,#0d0a09)",
+                background: `linear-gradient(180deg, ${color.night850}, ${color.night950})`,
                 opacity: soilOpacity,
                 pointerEvents: "none",
               }}
             />
-            <div
+
+            <span
               style={{
                 position: "absolute",
                 left: "50%",
-                bottom: 18,
+                bottom: space[5],
                 transform: "translateX(-50%)",
-                padding: "6px 14px",
-                whiteSpace: "nowrap",
-                fontSize: 11.5,
-                letterSpacing: "0.14em",
                 opacity: hintOpacity,
-                ...glassPill(),
+                transition: `opacity ${300}ms var(--ease-soft)`,
+                ...statusTag("rain"),
               }}
             >
-              TAP · {tapCount} / 5
-            </div>
+              <span aria-hidden style={statusDot("rain")} />
+              두드리기 {tapCount} / 5
+            </span>
           </div>
         </div>
       )}
@@ -271,98 +270,53 @@ export function FirstMeet({
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-end",
-            padding: 26,
-            background: "radial-gradient(80% 50% at 50% 45%,rgba(232,168,96,.09),transparent 70%)",
+            padding: STEP_PADDING,
+            minHeight: 0,
           }}
         >
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div
-              style={{
-                position: "relative",
-                width: 18,
-                height: 24,
-                borderRadius: "50% 50% 45% 45%",
-                background: "#f2be82",
-                boxShadow: "0 0 46px rgba(240,184,120,.75)",
-                animation: "emberBreath 4.5s ease-in-out infinite",
-              }}
-            />
+          <div style={{ flex: 1, display: "grid", placeItems: "center", minHeight: 0 }}>
+            <Flame size={76} intensity={0.66} motion="breathe" />
           </div>
-          <p
-            style={{
-              margin: "0 0 6px",
-              fontFamily: "'Gowun Batang',serif",
-              fontSize: 21,
-              lineHeight: 1.55,
-              color: "#ddcdb6",
-              animation: "fadeUp .8s ease both",
-            }}
-          >
+          <p style={{ ...text.statusHeadline, animation: "fadeUp .8s ease both" }}>
             비를 피해
             <br />
             작은 불씨가 찾아왔어요.
           </p>
-          <p style={{ margin: "0 0 22px", fontSize: 12.5, color: "#6b6053" }}>비가 내리는 밤 · 처음 만나는 밤</p>
-          <button
-            onClick={wake}
-            style={{
-              width: "100%",
-              minHeight: 44,
-              padding: 17,
-              fontFamily: "'Noto Sans KR',sans-serif",
-              fontSize: 15,
-              letterSpacing: "0.02em",
-              ...glassButton("primary"),
-            }}
-          >
+          <p style={{ ...text.meta, marginTop: space[3], marginBottom: space[6] }}>
+            비가 내리는 밤 · 처음 만나는 밤
+          </p>
+          <button type="button" onClick={wake} style={{ ...glassButton("primary"), width: "100%" }}>
             불씨 깨우기
           </button>
         </div>
       )}
 
       {step === "name" && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 26 }}>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div
-              style={{
-                width: 16,
-                height: 22,
-                borderRadius: "50% 50% 45% 45%",
-                background: "#f2be82",
-                boxShadow: "0 0 40px rgba(240,184,120,.6)",
-                animation: "emberBreath 4.5s ease-in-out infinite",
-              }}
-            />
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
+            padding: STEP_PADDING,
+            minHeight: 0,
+          }}
+        >
+          <div style={{ flex: 1, display: "grid", placeItems: "center", minHeight: 0 }}>
+            <Flame size={64} intensity={0.58} motion="breathe" />
           </div>
-          <p style={{ margin: "0 0 20px", fontFamily: "'Gowun Batang',serif", fontSize: 21, color: "#ddcdb6" }}>
+          <label htmlFor="first-name-input" style={{ ...text.statusHeadline, marginBottom: space[5] }}>
             이 불씨를 어떻게 부를까요?
-          </p>
+          </label>
           <input
+            id="first-name-input"
             value={nameDraft}
             onChange={onNameInput}
             placeholder="이름"
-            style={{
-              width: "100%",
-              boxSizing: "border-box",
-              minHeight: 44,
-              padding: "16px 18px",
-              fontSize: 16,
-              fontFamily: "'Noto Sans KR',sans-serif",
-              marginBottom: 12,
-              ...glassInput(),
-            }}
+            autoComplete="off"
+            style={{ ...glassInput(), width: "100%", boxSizing: "border-box", marginBottom: space[3] }}
           />
-          <button
-            onClick={saveName}
-            style={{
-              width: "100%",
-              minHeight: 44,
-              padding: 17,
-              fontSize: 15,
-              fontFamily: "'Noto Sans KR',sans-serif",
-              ...glassButton("primary"),
-            }}
-          >
+          <button type="button" onClick={saveName} style={{ ...glassButton("primary"), width: "100%" }}>
             저장
           </button>
         </div>

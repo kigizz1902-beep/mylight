@@ -1,6 +1,8 @@
 import type { ChangeEvent } from "react";
+import { Check } from "lucide-react";
 
-import { glassButton, glassInput, glassPanel, glassPill } from "@/lib/glass";
+import { color, GUTTER, radius, space, text } from "@/lib/design";
+import { glassButton, glassInput, glassPanel, statusTag } from "@/lib/glass";
 
 interface SettingsScreenProps {
   nameDraft: string;
@@ -10,6 +12,14 @@ interface SettingsScreenProps {
   connectionLabel: string;
 }
 
+/**
+ * 설정 — System Cards (디자인.md §7.3E).
+ *
+ * The quietest screen in the app: the darkest surfaces, no coloured glow at all,
+ * and nothing here may draw the eye ahead of 오늘 (§1.3 puts 메뉴·설정·기술 상태
+ * last). The connection state is a tag with a dot *and* a word, since §16.2
+ * forbids carrying state in colour alone.
+ */
 export function SettingsScreen({
   nameDraft,
   onNameInput,
@@ -17,6 +27,8 @@ export function SettingsScreen({
   outputModeLabel,
   connectionLabel,
 }: SettingsScreenProps) {
+  const canRename = nameDraft.trim().length > 0;
+
   return (
     <div
       style={{
@@ -24,79 +36,82 @@ export function SettingsScreen({
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
-        padding: "22px 26px 0",
-        background: "#0c0a09",
-        color: "#e6dccd",
-        fontFamily: "'Noto Sans KR',system-ui,sans-serif",
+        minHeight: 0,
+        overflowY: "auto",
+        padding: `max(${space[5]}, env(safe-area-inset-top)) ${GUTTER}px ${space[6]}`,
+        color: color.textPrimary,
       }}
     >
-      <p style={{ margin: "12px 0 18px", fontFamily: "'Gowun Batang',serif", fontSize: 22, color: "#e2d3bd" }}>설정</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={glassPanel({ radius: 16, padding: "16px 18px" })}>
-          <label htmlFor="rename-input" style={{ display: "block", margin: "0 0 10px", fontSize: 11.5, color: "#7d7264" }}>
+      <h1 style={{ ...text.screenTitle, flex: "none", marginBottom: space[5] }}>설정</h1>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
+        <section style={glassPanel({ radius: radius.md, padding: space[5], tone: "quiet" })}>
+          <label htmlFor="rename-input" style={{ ...text.label, display: "block", marginBottom: space[3] }}>
             이름
           </label>
           <input
             id="rename-input"
             value={nameDraft}
             onChange={onNameInput}
-            style={{
-              width: "100%",
-              boxSizing: "border-box",
-              // 44px floor: mobile text inputs must stay tappable.
-              minHeight: 44,
-              padding: "12px 14px",
-              fontSize: 15,
-              fontFamily: "'Noto Sans KR',sans-serif",
-              ...glassInput(),
-            }}
+            autoComplete="off"
+            style={{ ...glassInput(), width: "100%", boxSizing: "border-box" }}
           />
           <button
+            type="button"
             onClick={renameSave}
-            disabled={!nameDraft.trim()}
+            disabled={!canRename}
+            className="pressable"
             style={{
-              marginTop: 10,
-              minHeight: 44,
-              padding: "11px 16px",
-              fontSize: 13,
-              fontFamily: "'Noto Sans KR',sans-serif",
               ...glassButton("ghost"),
-              ...(nameDraft.trim() ? null : { opacity: 0.45, cursor: "not-allowed" }),
+              marginTop: space[3],
+              minHeight: 44,
+              fontSize: 13,
+              // §8 forms — a disabled control reads as disabled and does nothing.
+              ...(canRename ? null : { opacity: 0.45, cursor: "not-allowed" }),
             }}
           >
             이름 변경
           </button>
-        </div>
-        <div
+        </section>
+
+        {/* The tag sits on the title row rather than beside the whole block, so the
+            explanatory line below gets the card's full width instead of being
+            squeezed into a column narrow enough to break mid-word. */}
+        <section
           style={{
+            ...glassPanel({ radius: radius.md, padding: space[5], tone: "quiet" }),
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            ...glassPanel({ radius: 16, padding: "17px 18px" }),
+            flexDirection: "column",
+            gap: space[2],
           }}
         >
-          <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontSize: 13.5, color: "#d9cbb6" }}>출력 모드</span>
-            <span style={{ fontSize: 11.5, color: "#7d7264" }}>FR-09 · 같은 엔진, 출력만 교체</span>
+          <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: space[3] }}>
+            <span style={{ ...text.body, color: color.textPrimary, fontSize: 14 }}>출력 모드</span>
+            <span style={statusTag("rain")}>{outputModeLabel}</span>
           </span>
-          <span style={{ fontSize: 12.5, padding: "6px 12px", ...glassPill(true) }}>{outputModeLabel}</span>
-        </div>
-        <div
+          <span style={text.meta}>FR-09 · 같은 엔진, 출력만 교체</span>
+        </section>
+
+        <section
           style={{
+            ...glassPanel({ radius: radius.md, padding: space[5], tone: "quiet" }),
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            ...glassPanel({ radius: 16, padding: "17px 18px" }),
+            flexDirection: "column",
+            gap: space[2],
           }}
         >
-          <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontSize: 13.5, color: "#d9cbb6" }}>연결 상태</span>
-            <span style={{ fontSize: 11.5, color: "#7d7264" }}>FR-10 · 연결이 끊겨도 일반 조명으로 사용</span>
+          <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: space[3] }}>
+            <span style={{ ...text.body, color: color.textPrimary, fontSize: 14 }}>연결 상태</span>
+            <span style={statusTag("success")}>
+              <Check size={13} strokeWidth={2} aria-hidden />
+              {connectionLabel}
+            </span>
           </span>
-          <span style={{ fontSize: 12.5, color: "#8fa07c" }}>{connectionLabel}</span>
-        </div>
+          <span style={text.meta}>FR-10 · 연결이 끊겨도 일반 조명으로 사용</span>
+        </section>
       </div>
-      <p style={{ margin: "22px 0 0", fontSize: 11.5, lineHeight: 1.8, color: "#71675a" }}>
+
+      <p style={{ ...text.meta, lineHeight: 1.8, marginTop: space[6] }}>
         알림·출석·색상 편집은 제공하지 않습니다.
         <br />
         사용하지 않는 기간에도 기록은 줄지 않습니다.

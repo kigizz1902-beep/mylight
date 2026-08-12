@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-app);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-app);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,7 +48,95 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ==========================================================================
+ * Design tokens — 디자인.md §5.
+ * Single source of truth for every colour, radius, spacing step, shadow and
+ * easing in the app. Per §0 rule 4, screens must not introduce their own hex
+ * values, shadows or radii; they reference these variables instead.
+ * ========================================================================== */
+
 :root {
+  /* Background */
+  --night-950: #07080b;
+  --night-900: #0b0d12;
+  --night-850: #10131a;
+  --night-800: #151924;
+
+  /* Glass surfaces */
+  --glass-strong: rgba(24, 28, 38, 0.78);
+  --glass-medium: rgba(20, 23, 32, 0.64);
+  --glass-soft: rgba(28, 32, 43, 0.42);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-soft: rgba(255, 255, 255, 0.06);
+  --glass-highlight: rgba(255, 255, 255, 0.14);
+
+  /* Text */
+  --text-primary: #f4f1ea;
+  --text-secondary: #b7bac4;
+  --text-tertiary: #777d8c;
+  --text-disabled: #505562;
+
+  /* Living flame */
+  --flame-core: #fff4d6;
+  --flame-cream: #f9dca0;
+  --flame-amber: #e99b45;
+  --flame-deep: #a95524;
+  --flame-ember: #6e2f1e;
+
+  /* Night ambience */
+  --aurora-blue: #315a87;
+  --aurora-indigo: #343b78;
+  --aurora-violet: #69558a;
+  --rain-blue: #486275;
+
+  /* Semantic */
+  --success: #74a58f;
+  --warning: #d1a15f;
+  --error: #bf6969;
+
+  /* Radius */
+  --radius-xl: 28px;
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --radius-sm: 14px;
+  --radius-pill: 999px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Shadow */
+  --shadow-card: 0 18px 50px rgba(0, 0, 0, 0.34);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --shadow-flame: 0 0 18px rgba(233, 155, 69, 0.42), 0 0 48px rgba(169, 85, 36, 0.24);
+
+  /* Motion */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-breathe: cubic-bezier(0.45, 0, 0.55, 1);
+  --duration-fast: 160ms;
+  --duration-normal: 280ms;
+  --duration-slow: 900ms;
+
+  /* Typography — §9.1. Pretendard first, with the document's fallback chain. */
+  --font-app: Pretendard, "SUIT Variable", SUIT, Inter, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+
+  /* Keyboard focus ring — §16.2. */
+  --focus-ring: 2px solid rgba(249, 220, 160, 0.72);
+}
+
+/* The `--radius-*` tokens above are the document's fixed pixel ramp (§5) and are
+ * what app surfaces read via var(). `--radius` is kept so any remaining shadcn
+ * primitive still resolves through its own `calc(var(--radius) * n)` ramp. */
+:root {
+  --radius: 0.625rem;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -72,7 +160,6 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -83,63 +170,247 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* The app is dark-only (`<html class="dark">`), so the shadcn surface tokens are
+ * mapped onto the night palette — a stray primitive then lands on the same
+ * charcoal-and-glass surfaces as everything else instead of shadcn's neutral grey. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: var(--night-950);
+  --foreground: var(--text-primary);
+  --card: var(--night-850);
+  --card-foreground: var(--text-primary);
+  --popover: var(--night-850);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--flame-cream);
+  --primary-foreground: var(--night-950);
+  --secondary: var(--night-800);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--night-800);
+  --muted-foreground: var(--text-tertiary);
+  --accent: var(--night-800);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--error);
+  --border: var(--glass-border);
+  --input: var(--glass-border);
+  --ring: var(--flame-cream);
+  --chart-1: var(--flame-amber);
+  --chart-2: var(--aurora-blue);
+  --chart-3: var(--aurora-indigo);
+  --chart-4: var(--aurora-violet);
+  --chart-5: var(--rain-blue);
+  --sidebar: var(--night-900);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--flame-cream);
+  --sidebar-primary-foreground: var(--night-950);
+  --sidebar-accent: var(--night-800);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--glass-border);
+  --sidebar-ring: var(--flame-cream);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
   }
 }
 
-/*
- * Dokkaebi app chrome.
- * The default range input renders a bright blue fill on a white track — far too
- * luminous for a screen the worksheet requires to stay dimmer than the room.
+/* ==========================================================================
+ * Layer 1 + 2 — Night Space and Ambient Light (§3, §6.1).
+ * Two very wide, very faint corner gradients over a charcoal-to-near-black
+ * vertical wash. Deliberately unlayered so it wins over Tailwind's base layer.
+ * ========================================================================== */
+
+body {
+  min-height: 100dvh;
+  color: var(--text-primary);
+  font-family: var(--font-app);
+  background:
+    radial-gradient(circle at 82% 18%, rgba(49, 90, 135, 0.12), transparent 34%),
+    radial-gradient(circle at 12% 82%, rgba(52, 59, 120, 0.11), transparent 38%),
+    linear-gradient(180deg, #0d1016 0%, var(--night-950) 58%, #08090d 100%);
+  background-attachment: fixed;
+}
+
+/* ==========================================================================
+ * Layer 3 — Glass Bento Cards (§7.1).
+ * ========================================================================== */
+
+.glass-card {
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-5);
+  border: 1px solid var(--glass-border-soft);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.045), transparent 38%),
+    var(--glass-medium);
+  box-shadow: var(--shadow-inset), var(--shadow-card);
+  backdrop-filter: blur(22px) saturate(115%);
+  -webkit-backdrop-filter: blur(22px) saturate(115%);
+}
+
+/* §16.2 — card text must stay readable without backdrop-filter support. */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-card {
+    background: rgba(20, 23, 32, 0.96);
+  }
+}
+
+/* ==========================================================================
+ * Layer 4 — Living Glow: the 도깨비불 (§8).
+ *
+ * `.flame-field` owns the halo and the swell animation; `.flame` owns the body
+ * and the breath. The document's structure nests the halo as `.flame::after`
+ * with `z-index: -1`, but the breathing `transform` on `.flame` makes it a
+ * stacking context, which would paint that halo behind the flame's own
+ * background and hide it. Splitting the two elements keeps the three light
+ * layers (core / body / halo) visible and lets the two motions coexist.
+ * ========================================================================== */
+
+.flame-field {
+  position: relative;
+  display: grid;
+  place-items: center;
+  /* §13.2 — at least 32px of empty space around the flame. */
+  padding: var(--space-8);
+}
+
+.flame-halo {
+  position: absolute;
+  /* Sized off the flame so the halo scales with it. */
+  width: calc(var(--flame-size, 82px) * 1.9);
+  height: calc(var(--flame-size, 82px) * 1.9);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(233, 155, 69, 0.26), transparent 67%);
+  filter: blur(18px);
+  opacity: var(--flame-intensity, 0.7);
+  transition: opacity var(--duration-normal) var(--ease-soft);
+  pointer-events: none;
+}
+
+.flame {
+  position: relative;
+  width: var(--flame-size, 82px);
+  /* Asymmetric on both axes — §8.1 forbids a true circle or teardrop. */
+  aspect-ratio: 0.86;
+  border-radius: 56% 44% 52% 48% / 64% 58% 42% 36%;
+  /*
+   * Three light layers — core, body, halo (§8.2) — but every stop carries alpha,
+   * because §8.1 says the silhouette comes from light and transparency, with no
+   * outline. The document's §8.3 snippet uses opaque colour stops; at any size
+   * large enough to be the card's subject that renders as a solid amber egg,
+   * which reads as a 육성 게임 object (§1.2) and blows past §5.1's 1–3% cap on
+   * warm area. Fading the body out instead keeps it a light source.
+   */
+  background:
+    radial-gradient(circle at 48% 55%, rgba(255, 244, 214, 0.92) 0 10%, rgba(255, 244, 214, 0) 27%),
+    radial-gradient(
+      circle at 50% 54%,
+      rgba(249, 220, 160, 0.7) 0 16%,
+      rgba(233, 155, 69, 0.55) 44%,
+      rgba(169, 85, 36, 0.26) 70%,
+      rgba(110, 47, 30, 0) 93%
+    );
+  filter: blur(0.2px);
+  box-shadow: var(--shadow-flame);
+  transform-origin: 50% 78%;
+  /* §14 — intensity is the state, not a decoration: it drives brightness. */
+  opacity: calc(0.06 + var(--flame-intensity, 0.7) * 0.94);
+  transition: opacity var(--duration-normal) var(--ease-soft);
+}
+
+/* §15.1 — 3.8–5.2s cycle, scale(0.985)↔scale(1.025), under 10% brightness swing. */
+@keyframes flame-breathe {
+  0%,
+  100% {
+    transform: scale(0.985) rotate(-0.4deg);
+    opacity: calc((0.06 + var(--flame-intensity, 0.7) * 0.94) * 0.9);
+  }
+  48% {
+    transform: scale(1.025) rotate(0.5deg);
+    opacity: calc(0.06 + var(--flame-intensity, 0.7) * 0.94);
+  }
+}
+
+/* §14 잠들 준비 — the same breath, slowed, so it reads as winding down. */
+.flame--breathe {
+  animation: flame-breathe 4.6s var(--ease-breathe) infinite;
+}
+
+.flame--slowing {
+  animation: flame-breathe 6.6s var(--ease-breathe) infinite;
+}
+
+/* §14 특별한 성장 — swells once, then settles. Runs on the field so it does not
+ * fight the breath's transform on `.flame` itself. */
+@keyframes flame-swell {
+  0% {
+    transform: scale(1);
+  }
+  38% {
+    transform: scale(1.16);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.flame-field--swell {
+  animation: flame-swell 1.6s var(--ease-soft) both;
+}
+
+/* ==========================================================================
+ * Cards, entrance and touch response (§15.2, §15.3).
+ * ========================================================================== */
+
+@keyframes rise-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise-in {
+  animation: rise-in 520ms var(--ease-soft) both;
+}
+
+/* §15.3 — press settles to 0.985; hover only lifts the surface a little, never
+ * floats the card. */
+.pressable {
+  transition:
+    transform var(--duration-fast) var(--ease-soft),
+    background-color var(--duration-fast) var(--ease-soft),
+    border-color var(--duration-fast) var(--ease-soft);
+}
+
+.pressable:active {
+  transform: scale(0.985);
+}
+
+@media (hover: hover) {
+  .pressable:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+}
+
+/* ==========================================================================
+ * Brightness slider (§10.5).
+ * Track 6px, thumb 22px with a faint amber halo, inactive track white 9%.
  * `--pct` is set inline from the brightness value to paint the filled portion.
- */
+ * ========================================================================== */
+
 .ember-slider {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 28px;
+  /* 44px keeps the drag target at the platform touch-target minimum (§16.2). */
+  height: 44px;
   background: transparent;
   cursor: pointer;
 }
@@ -150,24 +421,22 @@
 
 .ember-slider::-webkit-slider-runnable-track {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: linear-gradient(
     90deg,
-    rgba(240, 184, 120, 0.8) 0 var(--pct, 50%),
-    rgba(255, 241, 222, 0.1) var(--pct, 50%) 100%
+    var(--flame-amber) 0 var(--pct, 50%),
+    rgba(255, 255, 255, 0.09) var(--pct, 50%) 100%
   );
-  border: 1px solid rgba(255, 222, 176, 0.12);
 }
 
 .ember-slider::-moz-range-track {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: linear-gradient(
     90deg,
-    rgba(240, 184, 120, 0.8) 0 var(--pct, 50%),
-    rgba(255, 241, 222, 0.1) var(--pct, 50%) 100%
+    var(--flame-amber) 0 var(--pct, 50%),
+    rgba(255, 255, 255, 0.09) var(--pct, 50%) 100%
   );
-  border: 1px solid rgba(255, 222, 176, 0.12);
 }
 
 .ember-slider::-webkit-slider-thumb {
@@ -175,33 +444,96 @@
   appearance: none;
   width: 22px;
   height: 22px;
-  margin-top: -9px;
+  margin-top: -8px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 222, 176, 0.4);
-  background: radial-gradient(circle at 40% 35%, #fff2d8, #e8c395 55%, #c8894a);
-  box-shadow: 0 0 12px rgba(240, 184, 120, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 226, 174, 0.28);
+  background: radial-gradient(circle at 40% 35%, var(--flame-core), var(--flame-cream) 55%, var(--flame-amber));
+  box-shadow: 0 0 14px rgba(233, 155, 69, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .ember-slider::-moz-range-thumb {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 222, 176, 0.4);
-  background: radial-gradient(circle at 40% 35%, #fff2d8, #e8c395 55%, #c8894a);
-  box-shadow: 0 0 12px rgba(240, 184, 120, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 226, 174, 0.28);
+  background: radial-gradient(circle at 40% 35%, var(--flame-core), var(--flame-cream) 55%, var(--flame-amber));
+  box-shadow: 0 0 14px rgba(233, 155, 69, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
-/* Keyboard focus must stay visible — several inputs previously set outline: none. */
+/* ==========================================================================
+ * Bottom navigation (§12).
+ * Active tab is cream icon + label — never a large coloured capsule.
+ * ========================================================================== */
+
+.night-nav {
+  display: flex;
+  flex: none;
+  /* 68–72px excluding the safe area (§12), plus the inset below it (§4.2). */
+  min-height: 70px;
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
+  background: rgba(13, 15, 21, 0.82);
+  border-top: 1px solid var(--glass-border-soft);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .night-nav {
+    background: rgba(13, 15, 21, 0.97);
+  }
+}
+
+.night-nav__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  /* 44px touch-target floor (§16.2). */
+  min-height: 44px;
+  padding: var(--space-2) 0;
+  border: none;
+  background: transparent;
+  font-family: var(--font-app);
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-soft);
+}
+
+.night-nav__item[aria-current="page"] {
+  color: var(--flame-cream);
+}
+
+/* ==========================================================================
+ * Focus and scrollbars.
+ * ========================================================================== */
+
+/*
+ * Korean breaks anywhere by default, which splits 어절 mid-word ("사 / 용",
+ * "니 / 다") and makes the quiet two-line status sentences the design leans on
+ * read as typos. `keep-all` breaks at word boundaries instead; `break-word` is
+ * the escape hatch for a single token wider than its box.
+ */
+.dokkaebi-app {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* §16.2 — keyboard focus must be unmistakable. Several inputs previously set
+ * `outline: none`; the app relies on this rule instead. */
 .dokkaebi-app :focus-visible {
-  outline: 2px solid rgba(240, 184, 120, 0.85);
+  outline: var(--focus-ring);
   outline-offset: 3px;
 }
 
-/* Scrollbars for the app's scrollable panes (기록 list, about modal) — the default
- * OS scrollbar is a bright light-grey bar that breaks the dark/glass look. */
+/* The default OS scrollbar is a bright light-grey bar that breaks the night. */
 .dokkaebi-app * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(240, 184, 120, 0.35) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
 
 .dokkaebi-app *::-webkit-scrollbar {
@@ -214,16 +546,20 @@
 }
 
 .dokkaebi-app *::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(240, 184, 120, 0.32), rgba(200, 137, 74, 0.22));
-  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-pill);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
 .dokkaebi-app *::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(240, 184, 120, 0.5), rgba(200, 137, 74, 0.35));
+  background: rgba(255, 255, 255, 0.22);
   background-clip: padding-box;
 }
+
+/* ==========================================================================
+ * Scene animations.
+ * ========================================================================== */
 
 @keyframes rain-fall {
   0% {
@@ -234,49 +570,17 @@
   }
 }
 
-@keyframes ember-settle {
+@keyframes rainfall {
   0% {
-    transform: scale(0.85) translateY(2px);
-    filter: brightness(0.85);
-  }
-  35% {
-    transform: scale(1.08) translateY(-1px);
-    filter: brightness(1.15);
-  }
-  60% {
-    transform: scale(0.97) translateY(1px);
-    filter: brightness(0.95);
+    background-position: 0 0;
   }
   100% {
-    transform: scale(1) translateY(0);
-    filter: brightness(1);
+    background-position: -60px 600px;
   }
 }
 
-@keyframes ember-flicker {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.92;
-    transform: scale(1.015);
-  }
-}
-
-@keyframes emberBreath {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.9;
-  }
-  50% {
-    transform: scale(1.06);
-    opacity: 1;
-  }
-}
-
+/* The real power-on: growth stage decides the duration, so a 100-night flame
+ * settles noticeably faster than a first-night one. */
 @keyframes wakePattern {
   0% {
     opacity: 0;
@@ -334,6 +638,8 @@
   }
 }
 
+/* The bedtime acknowledgement: one short dip, never a pulse of light across the
+ * whole screen (§15 금지 모션). */
 @keyframes ackPulse {
   0% {
     opacity: 1;
@@ -343,15 +649,6 @@
   }
   100% {
     opacity: 1;
-  }
-}
-
-@keyframes rainfall {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: -60px 600px;
   }
 }
 
@@ -366,12 +663,46 @@
   }
 }
 
+/* Used by the standalone /awaken encounter prototype (rainy-night-encounter.tsx). */
+@keyframes ember-settle {
+  0% {
+    transform: scale(0.85) translateY(2px);
+    filter: brightness(0.85);
+  }
+  35% {
+    transform: scale(1.08) translateY(-1px);
+    filter: brightness(1.15);
+  }
+  60% {
+    transform: scale(0.97) translateY(1px);
+    filter: brightness(0.95);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    filter: brightness(1);
+  }
+}
+
+@keyframes ember-flicker {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scale(1.015);
+  }
+}
+
+/* §15.4 */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.001ms !important;
+    animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -1,11 +1,10 @@
 import type { CSSProperties } from "react";
 
+import { color, radius, space, text } from "@/lib/design";
 import { glassButton } from "@/lib/glass";
 
 interface TestToolProps {
-  rainBg: string;
-  rainFg: string;
-  rainBorder: string;
+  rainy: boolean;
   nextNight: () => void;
   jumpSeven: () => void;
   jumpThirty: () => void;
@@ -13,52 +12,57 @@ interface TestToolProps {
   reset: () => void;
 }
 
-const baseButton: CSSProperties = {
-  padding: "9px 14px",
-  fontSize: 12.5,
-  fontFamily: "'Noto Sans KR',sans-serif",
+/**
+ * Development-only time machine (never rendered in production). Styled as the
+ * quietest thing on the page — it is scaffolding, not part of the product, so it
+ * gets a dashed border and no glow of any kind.
+ */
+const button: CSSProperties = {
   ...glassButton("ghost"),
+  minHeight: 44,
+  padding: `0 ${space[4]}`,
+  borderRadius: radius.sm,
+  fontSize: 12.5,
+  fontWeight: 500,
 };
 
-export function TestTool({
-  rainBg,
-  rainFg,
-  rainBorder,
-  nextNight,
-  jumpSeven,
-  jumpThirty,
-  toggleRain,
-  reset,
-}: TestToolProps) {
+export function TestTool({ rainy, nextNight, jumpSeven, jumpThirty, toggleRain, reset }: TestToolProps) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
-        padding: "12px 16px",
-        borderRadius: 14,
-        border: "1px dashed #2b2319",
-        background: "#0c0a09",
-        fontFamily: "'Noto Sans KR',system-ui,sans-serif",
+        gap: space[2],
+        padding: `${space[3]} ${space[4]}`,
+        borderRadius: radius.sm,
+        border: `1px dashed ${color.glassBorderSoft}`,
       }}
     >
-      <button onClick={nextNight} style={baseButton}>
+      <span style={{ ...text.label, paddingRight: space[1] }}>DEV</span>
+      <button type="button" onClick={nextNight} style={button}>
         다음 밤으로
       </button>
-      <button onClick={jumpSeven} style={baseButton}>
+      <button type="button" onClick={jumpSeven} style={button}>
         7번째 밤
       </button>
       <button
+        type="button"
         onClick={toggleRain}
-        style={{ ...baseButton, border: `1px solid ${rainBorder}`, background: rainBg, color: rainFg }}
+        aria-pressed={rainy}
+        style={{
+          ...button,
+          // Weather is the night's space, so the active state is cool, not warm.
+          ...(rainy
+            ? { borderColor: "rgba(72, 98, 117, 0.5)", color: color.textSecondary }
+            : { color: color.textTertiary }),
+        }}
       >
         비오는날
       </button>
-      <button onClick={jumpThirty} style={baseButton}>
+      <button type="button" onClick={jumpThirty} style={button}>
         30번째 밤
       </button>
-      <button onClick={reset} style={{ ...baseButton, border: "none", color: "#7d7365" }}>
+      <button type="button" onClick={reset} style={{ ...button, border: "none", color: color.textTertiary }}>
         초기화
       </button>
     </div>

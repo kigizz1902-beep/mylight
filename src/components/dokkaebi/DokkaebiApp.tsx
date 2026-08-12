@@ -1,13 +1,14 @@
 "use client";
 
 import { useDokkaebiApp } from "@/hooks/use-dokkaebi-app";
-import { glassChrome, glassPill } from "@/lib/glass";
-import { fmt, gwa, ord, stageFor } from "@/lib/dokkaebi";
+import { color, space, text } from "@/lib/design";
+import { fmt, fmtCompact, gwa, moodFor, nextStageFor, ord, stageFor, stageProgress } from "@/lib/dokkaebi";
 import { RainBackground } from "@/components/ui/rain";
 import { TestTool } from "@/components/dokkaebi/TestTool";
 import { RoomScene } from "@/components/dokkaebi/RoomScene";
+import { BottomNav } from "@/components/dokkaebi/BottomNav";
 import { FirstMeet } from "@/components/dokkaebi/screens/FirstMeet";
-import { NightHome } from "@/components/dokkaebi/screens/NightHome";
+import { NightHome, type WeekPoint } from "@/components/dokkaebi/screens/NightHome";
 import { TonightRecord } from "@/components/dokkaebi/screens/TonightRecord";
 import { HistoryLog } from "@/components/dokkaebi/screens/HistoryLog";
 import { SettingsScreen } from "@/components/dokkaebi/screens/SettingsScreen";
@@ -15,6 +16,9 @@ import { SettingsScreen } from "@/components/dokkaebi/screens/SettingsScreen";
 /** No real light/hardware integration yet — see src/lib/light-controller.ts. */
 const OUTPUT_MODE_LABEL = "가상 출력";
 const SHOW_TEST_PANEL = process.env.NODE_ENV !== "production";
+
+/** §13.4 — the memory card covers the last seven nights. */
+const WEEK_LENGTH = 7;
 
 const SCENE_COPY: Record<string, [string, string]> = {
   discover: ["장면 1–2 · 비 오는 밤의 입구", "바깥의 비와 앱 속 세계가 같은 밤을 공유합니다. 공예 오브제는 아직 어둠 속 형태로만 남아 있습니다."],
@@ -25,20 +29,11 @@ const SCENE_COPY: Record<string, [string, string]> = {
   settings: ["사용자 통제", "세계관보다 사용자의 선택과 수면이 먼저입니다."],
 };
 
-const NAV_BUTTON_STYLE = {
-  flex: 1,
-  // 44px floor keeps the bottom nav within the platform touch-target minimum.
-  minHeight: 44,
-  padding: "12px 0",
-  fontSize: 12.5,
-  fontFamily: "'Noto Sans KR',sans-serif",
-  cursor: "pointer",
-} as const;
-
 export function DokkaebiApp() {
   const { state, actions } = useDokkaebiApp();
 
   const stage = stageFor(state.nights);
+  const nextStage = nextStageFor(state.nights);
   const on = state.isOn;
   const glowOpacity = on ? 0.18 + (state.brightness / 100) * 0.82 : 0;
   const detail = state.sessions.find((x) => x.id === state.detailId);
@@ -50,19 +45,38 @@ export function DokkaebiApp() {
   const isSettings = state.screen === "settings";
   const showNav = isHome || isLogSection || isSettings;
 
-  const stageLabel = stage.label;
   const totalTimeText = fmt(state.totalMinutes);
-  const powerLabel = on ? "켜짐" : "꺼짐";
-  const toggleJustify: "flex-end" | "flex-start" = on ? "flex-end" : "flex-start";
+
+  /**
+   * A stage boundary reached on this very night is the 특별한 성장 state (§14) —
+   * the flame swells once while the light is settling. Night 1 is excluded: the
+   * first meeting has its own scene and shouldn't open with a growth message.
+   */
+  const celebrating = state.waking && state.nights > 1 && stage.at === state.nights;
+
+  const mood = moodFor({
+    nights: state.nights,
+    isOn: on,
+    brightness: state.brightness,
+    bedtimeAck: state.bedtimeAck,
+    celebrating,
+  });
+
+  // §13.4 — the newest seven nights, oldest first so the trace reads left to right.
+  const week: WeekPoint[] = state.sessions
+    .slice(0, WEEK_LENGTH)
+    .map((s) => ({ label: s.title, minutes: s.minutes }))
+    .reverse();
 
   const homeScene: [string, string] = on
     ? ["장면 6–7 · 나의 밤에 머물기", "요구하지 않고 곁에 머뭅니다. 밝기를 가장 낮게 내리면 한 번만, 아주 짧게 대답합니다."]
     : ["장면 8 · 동트기 전 작별", "지연도 잔광도 소리도 없이 즉시 어둠으로 돌아갑니다."];
   const [sceneLabel, sceneNote] = state.screen === "home" ? homeScene : SCENE_COPY[state.screen] ?? homeScene;
 
+  // The room panel narrates the state in the same words the app uses (§14).
   const roomStatus =
     (state.rainy ? "비 오는 밤 · " : "맑은 밤 · ") +
-    (on ? `${stageLabel} · 밝기 ${state.brightness}` : state.nights ? "오브제 실루엣만 남음" : "어둠 속 형태만 보임");
+    (on ? `${mood.tag} · 밝기 ${state.brightness}` : state.nights ? "오브제 실루엣만 남음" : "어둠 속 형태만 보임");
 
   const glowAnim = state.waking ? state.wakeAnimation : state.acking ? "ackPulse .9s ease-in-out" : "none";
 
@@ -72,10 +86,6 @@ export function DokkaebiApp() {
     meta: x.ack ? "취침 신호에 대답함" : "취침 신호 없음",
     open: () => actions.openDetail(x.id),
   }));
-
-  const navHomeStyle = { ...NAV_BUTTON_STYLE, ...glassPill(state.screen === "home") };
-  const navLogStyle = { ...NAV_BUTTON_STYLE, ...glassPill(state.screen === "log") };
-  const navSetStyle = { ...NAV_BUTTON_STYLE, ...glassPill(state.screen === "settings") };
 
   const screenWrapperStyle = { flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" } as const;
   // Column direction so the screen stretches to the phone's full width. With the default
@@ -107,21 +117,35 @@ export function DokkaebiApp() {
         <div style={screenWrapperStyle}>
           <div style={screenLayerStyle}>
             <NightHome
-              nightTitle={`${gwa(state.name)} 보내는 ${ord(state.nights)} 밤`}
-              stageLabel={stageLabel}
-              totalTimeText={totalTimeText}
+              nightLabel={`${ord(state.nights)} 밤`}
+              greeting={state.rainy ? "비가 오는 밤이에요" : "조용한 밤이에요"}
+              mood={mood}
+              // §15.1's breath is a class on the flame; this slot is only for the
+              // one-off bedtime acknowledgement dip.
+              flameAnimation={state.acking ? "ackPulse .9s ease-in-out" : undefined}
+              togetherSentence={
+                state.nights === 0
+                  ? "곧 첫 밤이 시작돼요"
+                  : state.totalMinutes === 0
+                    // Nothing has accumulated yet, and "0분을 함께했어요" reads as a
+                    // failure rather than a beginning.
+                    ? `${gwa(state.name)} 이 밤을 시작했어요`
+                    : `${gwa(state.name)} ${totalTimeText}을 함께했어요`
+              }
+              togetherCompact={fmtCompact(state.totalMinutes)}
+              nights={state.nights}
+              growth={{
+                label: stage.label,
+                progress: stageProgress(state.nights),
+                nightsAway: nextStage ? nextStage.at - state.nights : null,
+              }}
+              week={week}
               brightness={state.brightness}
-              appEmberOpacity={on ? 1 : 0.22}
               isOn={on}
-              powerLabel={powerLabel}
-              powerSub={on ? "안정된 빛으로 머무는 중" : "탭하면 이 밤을 엽니다"}
               ackHint={!on ? "" : state.bedtimeAck ? "짧게 대답했습니다" : "가장 낮게 내리면 한 번 대답합니다"}
-              toggleBg={on ? "#3b2a18" : "#151110"}
-              toggleJustify={toggleJustify}
-              sliderOpacity={on ? 1 : 0.4}
-              sliderDisabled={!on}
               togglePower={actions.togglePower}
               onBrightness={actions.onBrightness}
+              openLog={actions.goLog}
             />
           </div>
         </div>
@@ -146,7 +170,7 @@ export function DokkaebiApp() {
             <HistoryLog
               nights={state.nights}
               totalTimeText={totalTimeText}
-              stageLabel={stageLabel}
+              stageLabel={stage.label}
               logTab={state.logTab}
               showDetail={!!state.detailId}
               sessions={sessionRows}
@@ -182,23 +206,25 @@ export function DokkaebiApp() {
   );
 
   return (
-    <div className="dokkaebi-app" style={{ display: "flex", minHeight: "100vh", background: "#080706" }}>
+    // The body carries the Night Space and Ambient Light layers (§3, §6.1), so the
+    // shell stays transparent instead of painting its own flat black over them.
+    <div className="dokkaebi-app" style={{ display: "flex", minHeight: "100dvh" }}>
       <div
         style={{
+          // §4.1 — the app shell is 520px on desktop, with the room beside it.
           width: 520,
           flex: "none",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: 18,
+          gap: space[5],
           padding: "34px 0 28px",
-          borderRight: "1px solid #17130f",
-          background: "linear-gradient(180deg,#0b0a08,#080706)",
+          borderRight: `1px solid ${color.glassBorderSoft}`,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11, letterSpacing: "0.16em", color: "#6a5f52" }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c8894a", display: "block" }} />
-          <span>앱 — 관계를 이해하는 창구</span>
+        <div style={{ display: "flex", alignItems: "center", gap: space[2], ...text.label }}>
+          <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: color.flameDeep }} />
+          <span style={{ letterSpacing: "0.04em" }}>앱 — 관계를 이해하는 창구</span>
         </div>
 
         <div
@@ -206,10 +232,13 @@ export function DokkaebiApp() {
             position: "relative",
             width: 392,
             height: 794,
+            // A device bezel, not a card: §MUST 06's 24–28px range governs cards, and
+            // a phone body needs its own much larger corner to read as hardware.
             borderRadius: 46,
-            border: "1px solid #221c16",
-            background: "#0c0a09",
-            boxShadow: "0 40px 90px rgba(0,0,0,.7), inset 0 0 0 6px #0a0908",
+            border: `1px solid ${color.glassBorder}`,
+            background: color.night950,
+            // Black-only shadows, per §7.2 — depth without introducing a colour.
+            boxShadow: "0 40px 90px rgba(0,0,0,.7), inset 0 0 0 6px rgba(0,0,0,.55)",
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
@@ -217,17 +246,16 @@ export function DokkaebiApp() {
         >
           <div
             style={{
+              flex: "none",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: "16px 26px 4px",
-              fontSize: 12,
-              color: "#7b6f60",
-              flex: "none",
+              padding: `${space[4]} ${space[6]} 0`,
+              ...text.meta,
             }}
           >
             <span>{state.clock}</span>
-            <span style={{ letterSpacing: "0.1em" }}>•••  ▮</span>
+            <span aria-hidden style={{ letterSpacing: "0.1em" }}>•••  ▮</span>
           </div>
 
           <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
@@ -236,6 +264,8 @@ export function DokkaebiApp() {
                 intensity={0.3}
                 dropSize={{ min: 14, max: 34 }}
                 angle={8}
+                // §MUST 03 — the rain is the night's space, so it stays blue-grey.
+                color="var(--rain-blue)"
                 lightningEnabled
                 lightningFrequency={0.6}
                 className="flex flex-1 flex-col"
@@ -248,40 +278,18 @@ export function DokkaebiApp() {
           </div>
 
           {showNav && (
-            <nav
-              aria-label="주요 화면"
-              style={{ flex: "none", display: "flex", gap: 8, padding: "10px 20px 22px", ...glassChrome() }}
-            >
-              <button
-                onClick={actions.goHome}
-                aria-current={state.screen === "home" ? "page" : undefined}
-                style={navHomeStyle}
-              >
-                오늘 밤
-              </button>
-              <button
-                onClick={actions.goLog}
-                aria-current={state.screen === "log" ? "page" : undefined}
-                style={navLogStyle}
-              >
-                기록
-              </button>
-              <button
-                onClick={actions.goSettings}
-                aria-current={state.screen === "settings" ? "page" : undefined}
-                style={navSetStyle}
-              >
-                설정
-              </button>
-            </nav>
+            <BottomNav
+              screen={state.screen}
+              goHome={actions.goHome}
+              goLog={actions.goLog}
+              goSettings={actions.goSettings}
+            />
           )}
         </div>
 
         {SHOW_TEST_PANEL && (
           <TestTool
-            rainBg={state.rainy ? "#1b1a18" : "#141110"}
-            rainFg={state.rainy ? "#a9c0d0" : "#7d7365"}
-            rainBorder={state.rainy ? "#2f3a42" : "#2a221a"}
+            rainy={state.rainy}
             nextNight={actions.nextNight}
             jumpSeven={actions.jumpSeven}
             jumpThirty={actions.jumpThirty}

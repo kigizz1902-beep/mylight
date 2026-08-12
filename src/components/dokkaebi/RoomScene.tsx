@@ -3,7 +3,8 @@
 import * as React from "react";
 import { X } from "lucide-react";
 
-import { glassButton, glassPanel, glassScrim } from "@/lib/glass";
+import { color, radius, space, text } from "@/lib/design";
+import { glassButton, glassPanel, glassScrim, innerGlow } from "@/lib/glass";
 
 interface RoomSceneProps {
   rainOpacity: number;
@@ -18,11 +19,17 @@ interface RoomSceneProps {
   closeAbout: () => void;
 }
 
+/**
+ * The room is *space*, so it is cool and near-black throughout (MUST 03): every
+ * surface here is drawn from the night tokens, and the only warm colour in the
+ * whole panel is the light the 도깨비불 casts. The two amber pane tints are that
+ * same light reflected — a glow with a visible source, per MUST 04.
+ */
 const WINDOW_PANES = [
-  { rainDuration: "1.9s", tint: "linear-gradient(160deg,rgba(96,128,158,.10),transparent 62%)", frost: "linear-gradient(180deg,#0c1116,#090b0e)" },
-  { rainDuration: "2.3s", tint: "linear-gradient(160deg,rgba(96,128,158,.08),transparent 62%)", frost: "linear-gradient(180deg,#0c1116,#090b0e)" },
-  { rainDuration: "2.1s", tint: "linear-gradient(20deg,rgba(238,176,104,.05),transparent 55%)", frost: "linear-gradient(180deg,#0b0f13,#080a0c)" },
-  { rainDuration: "1.7s", tint: "linear-gradient(20deg,rgba(238,176,104,.06),transparent 55%)", frost: "linear-gradient(180deg,#0b0f13,#080a0c)" },
+  { rainDuration: "1.9s", tint: "linear-gradient(160deg,rgba(72,98,117,.12),transparent 62%)" },
+  { rainDuration: "2.3s", tint: "linear-gradient(160deg,rgba(72,98,117,.10),transparent 62%)" },
+  { rainDuration: "2.1s", tint: "linear-gradient(20deg,rgba(233,155,69,.05),transparent 55%)" },
+  { rainDuration: "1.7s", tint: "linear-gradient(20deg,rgba(233,155,69,.06),transparent 55%)" },
 ];
 
 const ABOUT_CARDS = [
@@ -72,7 +79,7 @@ export function RoomScene({
         flex: 1,
         position: "relative",
         overflow: "hidden",
-        background: "radial-gradient(120% 90% at 62% 78%,#14100d,#070605 70%)",
+        background: `radial-gradient(120% 90% at 62% 78%, ${color.night850}, ${color.night950} 70%)`,
       }}
     >
       <div
@@ -83,15 +90,15 @@ export function RoomScene({
           width: 300,
           height: 390,
           borderRadius: "8px 8px 4px 4px",
-          background: "#100e0c",
-          border: "1px solid #1d1a16",
-          boxShadow: "0 18px 50px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.02)",
+          background: color.night900,
+          border: `1px solid ${color.glassBorderSoft}`,
+          boxShadow: "var(--shadow-card), inset 0 0 0 1px rgba(255,255,255,.02)",
           padding: 14,
           boxSizing: "border-box",
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gridTemplateRows: "1fr 1fr",
-          gap: 12,
+          gap: space[3],
         }}
       >
         {WINDOW_PANES.map((pane, i) => (
@@ -101,25 +108,29 @@ export function RoomScene({
               position: "relative",
               overflow: "hidden",
               borderRadius: 3,
-              background: pane.frost,
+              background: `linear-gradient(180deg, ${color.night850}, ${color.night950})`,
               boxShadow: "inset 0 0 22px rgba(0,0,0,.7)",
             }}
           >
             <div
+              aria-hidden
               style={{
                 position: "absolute",
                 inset: 0,
-                backgroundImage: "repeating-linear-gradient(102deg,rgba(165,195,220,.12) 0 1px,transparent 1px 24px)",
+                backgroundImage: "repeating-linear-gradient(102deg,rgba(120,150,175,.12) 0 1px,transparent 1px 24px)",
                 animation: `rainfall ${pane.rainDuration} linear infinite`,
                 opacity: rainOpacity,
                 transition: "opacity .5s ease",
               }}
             />
-            <div style={{ position: "absolute", inset: 0, background: pane.tint }} />
+            <div aria-hidden style={{ position: "absolute", inset: 0, background: pane.tint }} />
           </div>
         ))}
       </div>
+
+      {/* Window sill */}
       <div
+        aria-hidden
         style={{
           position: "absolute",
           left: "calc(6% - 14px)",
@@ -127,22 +138,25 @@ export function RoomScene({
           width: 328,
           height: 12,
           borderRadius: 2,
-          background: "linear-gradient(180deg,#1a1613,#100d0b)",
+          background: `linear-gradient(180deg, ${color.night800}, ${color.night900})`,
           boxShadow: "0 10px 24px rgba(0,0,0,.55)",
         }}
       />
 
+      {/* Floor and table */}
       <div
+        aria-hidden
         style={{
           position: "absolute",
           left: 0,
           right: 0,
           bottom: 0,
           height: "34%",
-          background: "linear-gradient(180deg,#0e0c0a,#0a0908)",
+          background: `linear-gradient(180deg, ${color.night900}, ${color.night950})`,
         }}
       />
       <div
+        aria-hidden
         style={{
           position: "absolute",
           left: "50%",
@@ -151,10 +165,11 @@ export function RoomScene({
           height: 14,
           marginLeft: -260,
           borderRadius: 3,
-          background: "#161210",
+          background: color.night800,
         }}
       />
 
+      {/* The craft object and the light it casts — the only warmth in the room. */}
       <div
         style={{
           position: "absolute",
@@ -169,6 +184,7 @@ export function RoomScene({
         }}
       >
         <div
+          aria-hidden
           style={{
             position: "absolute",
             bottom: -40,
@@ -177,7 +193,7 @@ export function RoomScene({
             left: "50%",
             marginLeft: -260,
             borderRadius: "50%",
-            background: "radial-gradient(circle,rgba(238,176,104,.42),rgba(238,176,104,0) 62%)",
+            background: "radial-gradient(circle, rgba(233,155,69,.42), rgba(233,155,69,0) 62%)",
             opacity: glowOpacity,
             animation: glowAnim,
             transition: "opacity .35s ease",
@@ -185,23 +201,25 @@ export function RoomScene({
           }}
         />
         <div
+          aria-hidden
           style={{
             position: "relative",
             width: 120,
             height: 150,
             borderRadius: "60px 60px 26px 26px",
-            background: "linear-gradient(180deg,#241d18,#141010)",
+            background: `linear-gradient(180deg, ${color.night800}, ${color.night950})`,
             boxShadow: "inset 0 -20px 40px rgba(0,0,0,.6)",
           }}
         />
         <div
+          aria-hidden
           style={{
             position: "absolute",
             bottom: 56,
             width: 60,
             height: 80,
             borderRadius: "50% 50% 40% 40%",
-            background: "radial-gradient(circle at 50% 65%,rgba(248,206,152,.95),rgba(232,168,96,.25) 70%,transparent)",
+            background: `radial-gradient(circle at 50% 65%, ${color.flameCore}, rgba(233,155,69,.25) 70%, transparent)`,
             opacity: glowOpacity,
             animation: glowAnim,
             transition: "opacity .35s ease",
@@ -209,32 +227,32 @@ export function RoomScene({
         />
       </div>
 
+      {/* System Card (§7.3E) — the technical readout, so the quietest surface here. */}
       <div
         style={{
+          // glassPanel sets `position: relative` so innerGlow children have a
+          // containing block, so it must be spread *before* this panel's own
+          // absolute placement — not after, or it silently pins the card to the
+          // top-left of the room.
+          ...glassPanel({ radius: radius.md, padding: space[5], tone: "quiet" }),
           position: "absolute",
-          right: 24,
-          top: 22,
+          right: space[6],
+          top: space[6],
+          maxWidth: "min(320px, calc(100% - 48px))",
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-end",
-          gap: 8,
-          maxWidth: "min(320px, calc(100% - 48px))",
+          gap: space[2],
           textAlign: "right",
-          ...glassPanel({ radius: 16, padding: "14px 18px" }),
         }}
       >
-        <span style={{ fontSize: 11, letterSpacing: "0.16em", color: "#7a6d5c" }}>생활 공간 시뮬레이션 · {outputModeLabel}</span>
-        <span style={{ fontSize: 11.5, color: "#9d8a71" }}>{roomStatus}</span>
+        <span style={text.label}>생활 공간 시뮬레이션 · {outputModeLabel}</span>
+        <span style={{ ...text.meta, color: color.textSecondary }}>{roomStatus}</span>
         <button
+          type="button"
           onClick={openAbout}
-          style={{
-            marginTop: 4,
-            padding: "11px 18px",
-            fontSize: 12.5,
-            fontFamily: "'Noto Sans KR',sans-serif",
-            whiteSpace: "nowrap",
-            ...glassButton("primary"),
-          }}
+          className="pressable"
+          style={{ ...glassButton("ghost"), marginTop: space[1], minHeight: 44, fontSize: 13 }}
         >
           더 알아보기
         </button>
@@ -261,78 +279,90 @@ export function RoomScene({
         >
           <div
             onClick={(event) => event.stopPropagation()}
-            style={{ width: "100%", maxWidth: 760, maxHeight: "100%", overflowY: "auto", display: "flex", flexDirection: "column", gap: 30 }}
+            style={{
+              width: "100%",
+              maxWidth: 760,
+              maxHeight: "100%",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: space[8],
+            }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <span style={{ fontSize: 11, letterSpacing: "0.18em", color: "#5b5145" }}>반려 도깨비불 · A버전 시나리오 프로토타입</span>
-                <p style={{ margin: 0, fontFamily: "'Gowun Batang',serif", fontSize: 31, lineHeight: 1.5, color: "#e7d8c2" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: space[6] }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: space[3] }}>
+                <span style={text.label}>반려 도깨비불 · A버전 시나리오 프로토타입</span>
+                {/* The one largest text in this dialog (§9.3). */}
+                <p style={{ ...text.screenTitle, fontSize: 31, lineHeight: 1.4 }}>
                   오래 쓴 시간으로
                   <br />
                   도깨비가 되어가는 조명
                 </p>
               </div>
               <button
+                type="button"
                 onClick={closeAbout}
                 aria-label="닫기"
+                className="pressable"
                 style={{
-                  flex: "none",
-                  width: 40,
-                  height: 40,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#c9bba5",
                   ...glassButton("ghost"),
+                  flex: "none",
+                  width: 44,
+                  height: 44,
+                  minHeight: 44,
+                  padding: 0,
                   borderRadius: "50%",
+                  color: color.textSecondary,
                 }}
               >
                 <X size={17} strokeWidth={1.75} aria-hidden />
               </button>
             </div>
 
-            <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.95, color: "#a4988a" }}>
+            <p style={{ ...text.body, fontSize: 15, lineHeight: 1.9 }}>
               집 안의 사물은 함께 보낸 시간을 기억하지 않습니다. 반려 도깨비불은 공예 조명 오브제와 앱이 결합된 반려형 테이블 조명으로, 별도의 돌봄 없이{" "}
-              <span style={{ color: "#dcc5a4" }}>매일 하던 대로 빛을 켜고 낮추고 끄는 동안</span> 함께한 밤이 쌓이고, 그 시간이 도깨비의 성격과
+              <span style={{ color: color.textPrimary }}>매일 하던 대로 빛을 켜고 낮추고 끄는 동안</span> 함께한 밤이 쌓이고, 그 시간이 도깨비의 성격과
               반응이 됩니다. 한국의 도깨비는 오래 쓴 물건에 깃들기에, 이 조명은 아직 도깨비가 아닌 채로 도착합니다.
             </p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: space[3] }}>
               {ABOUT_CARDS.map((item) => (
                 <div
                   key={item.title}
-                  style={{ display: "flex", flexDirection: "column", gap: 8, ...glassPanel({ radius: 16, padding: 20 }) }}
+                  style={{
+                    ...glassPanel({ radius: radius.md, padding: space[5] }),
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: space[2],
+                  }}
                 >
-                  <span style={{ fontSize: 12, color: "#c8a475" }}>{item.title}</span>
-                  <span style={{ fontSize: 12.5, lineHeight: 1.8, color: "#7d7264" }}>{item.body}</span>
+                  <span style={text.cardTitle}>{item.title}</span>
+                  <span style={{ ...text.body, fontSize: 13.5, lineHeight: 1.75 }}>{item.body}</span>
                 </div>
               ))}
             </div>
 
             <div
               style={{
+                ...glassPanel({ radius: radius.md, padding: space[6] }),
                 display: "flex",
                 flexDirection: "column",
-                gap: 10,
-                ...glassPanel({ radius: 16, padding: 22, elevated: true }),
+                gap: space[3],
               }}
             >
-              <span style={{ fontSize: 11, letterSpacing: "0.16em", color: "#5b5145" }}>지금 보고 있는 화면</span>
-              <span style={{ fontSize: 13, lineHeight: 1.85, color: "#8d8171" }}>
+              <span aria-hidden style={innerGlow("blue", { strength: 0.14, corner: "top-right" })} />
+              <span style={text.label}>지금 보고 있는 화면</span>
+              <span style={{ ...text.body, fontSize: 13.5, lineHeight: 1.8 }}>
                 왼쪽은 휴대폰 앱, 오른쪽은 생활 공간 시뮬레이션입니다. 실제 전구·서버·날짜 없이 시간을 압축해,{" "}
-                <span style={{ color: "#dcc5a4" }}>앱 조작 → 공간의 빛 반응 → 시간의 축적</span>이 하나의 경험으로 이해되는지를 검증합니다.
+                <span style={{ color: color.textPrimary }}>앱 조작 → 공간의 빛 반응 → 시간의 축적</span>이 하나의 경험으로 이해되는지를 검증합니다.
               </span>
             </div>
 
             <button
+              type="button"
               onClick={closeAbout}
-              style={{
-                alignSelf: "flex-start",
-                padding: "15px 26px",
-                fontSize: 14,
-                fontFamily: "'Noto Sans KR',sans-serif",
-                ...glassButton("primary"),
-              }}
+              className="pressable"
+              style={{ ...glassButton("primary"), alignSelf: "flex-start" }}
             >
               첫 번째 밤으로 돌아가기
             </button>
@@ -340,9 +370,19 @@ export function RoomScene({
         </div>
       )}
 
-      <div style={{ position: "absolute", left: 34, bottom: 28, maxWidth: 430, display: "flex", flexDirection: "column", gap: 8 }}>
-        <span style={{ fontSize: 11, letterSpacing: "0.16em", color: "#7a6d5c" }}>{sceneLabel}</span>
-        <p style={{ margin: 0, fontFamily: "'Gowun Batang',serif", fontSize: 16, lineHeight: 1.7, color: "#8d8171" }}>{sceneNote}</p>
+      <div
+        style={{
+          position: "absolute",
+          left: 34,
+          bottom: 28,
+          maxWidth: 430,
+          display: "flex",
+          flexDirection: "column",
+          gap: space[2],
+        }}
+      >
+        <span style={text.label}>{sceneLabel}</span>
+        <p style={{ ...text.body, fontSize: 14, lineHeight: 1.75 }}>{sceneNote}</p>
       </div>
     </div>
   );

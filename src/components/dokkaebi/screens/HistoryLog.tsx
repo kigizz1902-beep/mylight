@@ -1,11 +1,12 @@
 import type { CSSProperties } from "react";
 import { ArrowLeft } from "lucide-react";
 
-import { glassPanel, glassPill } from "@/lib/glass";
+import { color, GUTTER, radius, space, text } from "@/lib/design";
+import { glassPanel, glassPill, innerGlow } from "@/lib/glass";
 
 /**
- * Stat columns bottom-align their values via space-between so the three different
- * value font sizes line up without per-column padding nudges.
+ * Stat columns bottom-align their values via space-between so the different value
+ * font sizes line up without per-column padding nudges.
  */
 const STAT_COLUMN: CSSProperties = {
   flex: 1,
@@ -13,19 +14,14 @@ const STAT_COLUMN: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   justifyContent: "space-between",
-  gap: 5,
+  gap: space[2],
 };
 
-const STAT_LABEL: CSSProperties = { fontSize: 11.5, color: "#6b6053", whiteSpace: "nowrap" };
-
-const STAT_VALUE: CSSProperties = { color: "#e5d6c0", whiteSpace: "nowrap" };
-
-const TAB_BUTTON: CSSProperties = {
-  minHeight: 44,
-  padding: "9px 16px",
-  fontSize: 13,
-  fontFamily: "'Noto Sans KR',sans-serif",
-  cursor: "pointer",
+const ROW: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: space[3],
 };
 
 interface SessionRow {
@@ -58,6 +54,13 @@ interface HistoryLogProps {
   goLog: () => void;
 }
 
+/**
+ * 기록 — the Memory screen (디자인.md §7.3B).
+ *
+ * Everything here is 밤 and 기억, so the whole screen is cool: deep blue on the
+ * summary card, lilac on the growth entries (MUST 03), and no amber anywhere —
+ * the living flame is not on this screen, so nothing on it may look alive.
+ */
 export function HistoryLog({
   nights,
   totalTimeText,
@@ -85,92 +88,133 @@ export function HistoryLog({
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
-        background: "#0c0a09",
-        color: "#e6dccd",
-        fontFamily: "'Noto Sans KR',system-ui,sans-serif",
+        color: color.textPrimary,
       }}
     >
       {!showDetail && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "22px 26px 0", minHeight: 0 }}>
-          <p style={{ margin: "12px 0 16px", fontFamily: "'Gowun Batang',serif", fontSize: 22, color: "#e2d3bd" }}>기록</p>
-          <div
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            padding: `max(${space[5]}, env(safe-area-inset-top)) ${GUTTER}px 0`,
+          }}
+        >
+          <h1 style={{ ...text.screenTitle, flex: "none", marginBottom: space[5] }}>기록</h1>
+
+          <section
+            className="rise-in"
             style={{
+              ...glassPanel({ radius: radius.lg, padding: space[5] }),
+              flex: "none",
               display: "flex",
-              gap: 18,
-              marginBottom: 16,
-              ...glassPanel({ radius: 18, padding: "16px 18px" }),
+              gap: space[4],
+              marginBottom: space[4],
             }}
           >
+            <span aria-hidden style={innerGlow("blue", { strength: 0.16, corner: "top-right" })} />
             <div style={STAT_COLUMN}>
-              <span style={STAT_LABEL}>함께한 밤</span>
-              <span style={{ ...STAT_VALUE, fontSize: 19, fontVariantNumeric: "tabular-nums" }}>{nights}</span>
+              <span style={text.label}>함께한 밤</span>
+              <span style={{ ...text.cardTitle, fontVariantNumeric: "tabular-nums" }}>{nights}</span>
             </div>
-            <div style={{ ...STAT_COLUMN, flex: 1.4 }}>
-              <span style={STAT_LABEL}>누적 시간</span>
-              <span style={{ ...STAT_VALUE, fontSize: 16 }}>{totalTimeText}</span>
+            <div style={{ ...STAT_COLUMN, flex: 1.6 }}>
+              <span style={text.label}>누적 시간</span>
+              {/* §7.3B — the number is prominent but never glows. */}
+              <span style={{ ...text.statusHeadline, fontVariantNumeric: "tabular-nums" }}>{totalTimeText}</span>
             </div>
-            <div style={STAT_COLUMN}>
-              <span style={STAT_LABEL}>성장 단계</span>
-              <span style={{ ...STAT_VALUE, fontSize: 14 }}>{stageLabel}</span>
+            <div style={{ ...STAT_COLUMN, flex: 1.2 }}>
+              <span style={text.label}>성장 단계</span>
+              <span style={text.cardTitle}>{stageLabel}</span>
             </div>
-          </div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          </section>
+
+          <div style={{ flex: "none", display: "flex", gap: space[2], marginBottom: space[3] }}>
             <button
+              type="button"
               onClick={tabNights}
               aria-pressed={logTab === "nights"}
-              style={{ ...TAB_BUTTON, ...glassPill(logTab === "nights") }}
+              style={glassPill(logTab === "nights")}
             >
               밤 목록
             </button>
             <button
+              type="button"
               onClick={tabChanges}
               aria-pressed={logTab === "changes"}
-              style={{ ...TAB_BUTTON, ...glassPill(logTab === "changes") }}
+              style={glassPill(logTab === "changes")}
             >
               변화 이력
             </button>
           </div>
-          <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, paddingBottom: 16 }}>
+
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: space[2],
+              paddingBottom: space[5],
+            }}
+          >
+            {showNightsTab && sessions.length === 0 && (
+              <p style={{ ...text.meta, padding: `${space[4]} 0` }}>아직 기록된 밤이 없어요</p>
+            )}
             {showNightsTab &&
               sessions.map((s, i) => (
                 <button
                   key={i}
+                  type="button"
                   onClick={s.open}
+                  className="pressable"
                   style={{
+                    ...glassPanel({ radius: radius.sm, padding: `${space[4]} ${space[4]}` }),
+                    ...ROW,
                     width: "100%",
+                    flex: "none",
                     textAlign: "left",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 12,
                     cursor: "pointer",
-                    fontFamily: "'Noto Sans KR',sans-serif",
-                    ...glassPanel({ radius: 14, padding: "15px 16px" }),
                   }}
                 >
-                  <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span style={{ fontSize: 14, color: "#d9cab4" }}>{s.title}</span>
-                    <span style={{ fontSize: 11.5, color: "#655b4e" }}>{s.meta}</span>
+                  <span style={{ display: "flex", flexDirection: "column", gap: space[1] }}>
+                    <span style={{ ...text.body, color: color.textPrimary, fontSize: 14 }}>{s.title}</span>
+                    <span style={text.meta}>{s.meta}</span>
                   </span>
-                  <span style={{ fontSize: 12.5, color: "#8a7c6a" }}>{s.duration}</span>
+                  <span style={{ ...text.meta, color: color.textSecondary }}>{s.duration}</span>
                 </button>
               ))}
+
+            {showChangesTab && changes.length === 0 && (
+              <p style={{ ...text.meta, padding: `${space[4]} 0` }}>아직 기록된 변화가 없어요</p>
+            )}
             {showChangesTab &&
               changes.map((c, i) => (
                 <div
                   key={i}
                   style={{
+                    ...glassPanel({ radius: radius.sm, padding: `${space[4]} ${space[4]}` }),
+                    flex: "none",
                     display: "flex",
-                    gap: 14,
-                    ...glassPanel({ radius: 14, padding: "15px 16px" }),
+                    gap: space[3],
                   }}
                 >
+                  {/* 성장 = 라일락 (MUST 03) — the one hue reserved for rare change. */}
                   <span
-                    style={{ width: 6, height: 6, marginTop: 7, borderRadius: "50%", background: "#c8894a", flex: "none", display: "block" }}
+                    aria-hidden
+                    style={{
+                      width: 6,
+                      height: 6,
+                      marginTop: 7,
+                      flex: "none",
+                      borderRadius: "50%",
+                      background: color.auroraViolet,
+                    }}
                   />
-                  <span style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <span style={{ fontSize: 13.5, color: "#d9cab4" }}>{c.desc}</span>
-                    <span style={{ fontSize: 11.5, color: "#655b4e" }}>{c.meta}</span>
+                  <span style={{ display: "flex", flexDirection: "column", gap: space[1] }}>
+                    <span style={{ ...text.body, color: color.textPrimary, fontSize: 14 }}>{c.desc}</span>
+                    <span style={text.meta}>{c.meta}</span>
                   </span>
                 </div>
               ))}
@@ -179,63 +223,56 @@ export function HistoryLog({
       )}
 
       {showDetail && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "22px 26px 0" }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            overflowY: "auto",
+            padding: `max(${space[5]}, env(safe-area-inset-top)) ${GUTTER}px ${space[6]}`,
+          }}
+        >
           <button
+            type="button"
             onClick={goLog}
             style={{
               alignSelf: "flex-start",
               display: "flex",
               alignItems: "center",
-              gap: 6,
+              gap: space[1],
               minHeight: 44,
-              padding: "8px 12px 8px 0",
+              padding: `0 ${space[3]} 0 0`,
               border: "none",
               background: "transparent",
-              color: "#9a8b78",
+              color: color.textTertiary,
+              fontFamily: "var(--font-app)",
               fontSize: 13,
-              fontFamily: "'Noto Sans KR',sans-serif",
+              fontWeight: 550,
               cursor: "pointer",
             }}
           >
-            <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
+            <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
             기록
           </button>
-          <p style={{ margin: "22px 0 6px", fontFamily: "'Gowun Batang',serif", fontSize: 24, color: "#e4d5bf" }}>
-            {detailTitle}
-          </p>
-          {detailMeta && <p style={{ margin: "0 0 20px", fontSize: 12.5, color: "#7d7264" }}>{detailMeta}</p>}
-          <div style={{ height: detailMeta ? 6 : 26 }} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                ...glassPanel({ radius: 14, padding: "15px 16px" }),
-              }}
-            >
-              <span style={{ fontSize: 13, color: "#8f8474" }}>함께 머문 시간</span>
-              <span style={{ fontSize: 13, color: "#ddcdb6" }}>{detailDuration}</span>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                ...glassPanel({ radius: 14, padding: "15px 16px" }),
-              }}
-            >
-              <span style={{ fontSize: 13, color: "#8f8474" }}>가장 낮춘 밝기</span>
-              <span style={{ fontSize: 13, color: "#ddcdb6" }}>{detailMin}</span>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                ...glassPanel({ radius: 14, padding: "15px 16px" }),
-              }}
-            >
-              <span style={{ fontSize: 13, color: "#8f8474" }}>취침 신호</span>
-              <span style={{ fontSize: 13, color: "#ddcdb6" }}>{detailAck}</span>
-            </div>
+
+          <h1 style={{ ...text.screenTitle, marginTop: space[4] }}>{detailTitle}</h1>
+          {detailMeta && <p style={{ ...text.meta, marginTop: space[2] }}>{detailMeta}</p>}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: space[2], marginTop: space[6] }}>
+            {[
+              { label: "함께 머문 시간", value: detailDuration },
+              { label: "가장 낮춘 밝기", value: detailMin },
+              { label: "취침 신호", value: detailAck },
+            ].map((row) => (
+              <div
+                key={row.label}
+                style={{ ...glassPanel({ radius: radius.sm, padding: `${space[4]} ${space[4]}` }), ...ROW }}
+              >
+                <span style={text.label}>{row.label}</span>
+                <span style={{ ...text.body, color: color.textPrimary, fontSize: 14 }}>{row.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
