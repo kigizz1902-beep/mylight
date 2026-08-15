@@ -2,7 +2,20 @@
 
 import { useDokkaebiApp } from "@/hooks/use-dokkaebi-app";
 import { color, space, text } from "@/lib/design";
-import { fmt, fmtCompact, gwa, moodFor, nextStageFor, ord, stageFor, stageProgress } from "@/lib/dokkaebi";
+import { glassScrim } from "@/lib/glass";
+import {
+  fmt,
+  fmtCompact,
+  getBrightnessPreferenceSentence,
+  getWeatherSummarySentence,
+  gwa,
+  moodFor,
+  neun,
+  nextStageFor,
+  ord,
+  stageFor,
+  stageProgress,
+} from "@/lib/dokkaebi";
 import { RainBackground } from "@/components/ui/rain";
 import { TestTool } from "@/components/dokkaebi/TestTool";
 import { RoomScene } from "@/components/dokkaebi/RoomScene";
@@ -60,7 +73,21 @@ export function DokkaebiApp() {
     brightness: state.brightness,
     bedtimeAck: state.bedtimeAck,
     celebrating,
+    tonightEmotionChoice: state.tonightEmotionChoice,
+    followUpAnswered: state.followUpAnswer !== null,
   });
+
+  // SCENE 12 — the app-side flame reshapes once night 30 is reached; the room's
+  // colour tint follows the same threshold (RoomScene below).
+  const flameTemperament = state.nights >= 30 ? "water" : "none";
+  const temperamentData =
+    state.nights >= 30
+      ? {
+          weatherSentence: getWeatherSummarySentence(state.sessions),
+          brightnessSentence: getBrightnessPreferenceSentence(state.sessions),
+          closingLine: `${neun(state.name)} 비를 오래 머금은 불이 되었습니다.`,
+        }
+      : null;
 
   // §13.4 — the newest seven nights, oldest first so the trace reads left to right.
   const week: WeekPoint[] = state.sessions
@@ -122,7 +149,9 @@ export function DokkaebiApp() {
               mood={mood}
               // §15.1's breath is a class on the flame; this slot is only for the
               // one-off bedtime acknowledgement dip.
-              flameAnimation={state.acking ? "ackPulse .9s ease-in-out" : undefined}
+              flameAnimation={
+                state.acking || state.followUpGlow ? "ackPulse .9s ease-in-out" : undefined
+              }
               togetherSentence={
                 state.nights === 0
                   ? "곧 첫 밤이 시작돼요"
@@ -146,6 +175,14 @@ export function DokkaebiApp() {
               togglePower={actions.togglePower}
               onBrightness={actions.onBrightness}
               openLog={actions.goLog}
+              showEmotionQuestion={!state.emotionAskedTonight}
+              onAnswerEmotion={actions.answerEmotion}
+              onSkipEmotionQuestion={actions.skipEmotionQuestion}
+              showFollowUpQuestion={state.showFollowUp}
+              onAnswerFollowUp={actions.answerFollowUp}
+              onSkipFollowUp={actions.skipFollowUp}
+              flameTemperament={flameTemperament}
+              temperament={temperamentData}
             />
           </div>
         </div>
@@ -285,6 +322,45 @@ export function DokkaebiApp() {
               goSettings={actions.goSettings}
             />
           )}
+
+          {/* SCENE 9's accumulation cut — nothing has changed yet, so the room and
+              flame stay exactly as they were underneath this note. */}
+          {state.showAccumulationNote && (
+            <div
+              aria-live="polite"
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 6,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: space[8],
+                textAlign: "center",
+                ...glassScrim(),
+                animation: "fadeUp .35s ease both",
+              }}
+            >
+              <p style={{ ...text.cardTitle, color: color.textSecondary }}>
+                아직 달라진 건 없어요. 다만 쌓이고 있어요.
+              </p>
+            </div>
+          )}
+
+          {/* SCENE 12-B — the app stays dark for a beat so the room's light (already
+              updated below) is what the user notices first (스토리보드 6장 조건 7). */}
+          {state.appDimmed && (
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 6,
+                background: color.night950,
+                transition: "opacity 1.2s ease",
+              }}
+            />
+          )}
         </div>
 
         {SHOW_TEST_PANEL && (
@@ -307,6 +383,7 @@ export function DokkaebiApp() {
         roomStatus={roomStatus}
         sceneLabel={sceneLabel}
         sceneNote={sceneNote}
+        temperament={flameTemperament}
         showAbout={state.showAbout}
         openAbout={actions.openAbout}
         closeAbout={actions.closeAbout}

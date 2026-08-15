@@ -16,6 +16,8 @@ interface FlameProps {
    */
   animation?: string;
   style?: CSSProperties;
+  /** SCENE 12 — "water" after night 30 gives the app-side flame a taller, wavier silhouette. Color/rhythm still come from intensity/motion; this only reshapes the body. */
+  temperament?: "none" | "water";
 }
 
 const MOTION_CLASS: Record<Mood["motion"], string> = {
@@ -36,7 +38,7 @@ const MOTION_CLASS: Record<Mood["motion"], string> = {
  * body's opacity and the halo's strength together, which is what §14 means by
  * changing the light rather than only the text.
  */
-export function Flame({ size = 82, intensity, motion, animation, style }: FlameProps) {
+export function Flame({ size = 82, intensity, motion, animation, style, temperament = "none" }: FlameProps) {
   return (
     <div
       aria-hidden
@@ -51,7 +53,9 @@ export function Flame({ size = 82, intensity, motion, animation, style }: FlameP
       }
     >
       <span className="flame-halo" />
-      <span className={`flame ${MOTION_CLASS[motion]}`} />
+      <span
+        className={`flame ${MOTION_CLASS[motion]}${temperament === "water" ? " flame--water" : ""}`}
+      />
     </div>
   );
 }

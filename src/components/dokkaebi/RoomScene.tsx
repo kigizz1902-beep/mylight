@@ -14,6 +14,8 @@ interface RoomSceneProps {
   roomStatus: string;
   sceneLabel: string;
   sceneNote: string;
+  /** SCENE 12-B — "water" tints the cast light cooler, before the app ever reveals why (스토리보드 6장 조건 7). */
+  temperament?: "none" | "water";
   showAbout: boolean;
   openAbout: () => void;
   closeAbout: () => void;
@@ -59,10 +61,18 @@ export function RoomScene({
   roomStatus,
   sceneLabel,
   sceneNote,
+  temperament = "none",
   showAbout,
   openAbout,
   closeAbout,
 }: RoomSceneProps) {
+  const isWater = temperament === "water";
+  const haloGradient = isWater
+    ? "radial-gradient(circle, rgba(140,178,196,.34), rgba(233,155,69,.16) 46%, transparent 66%)"
+    : "radial-gradient(circle, rgba(233,155,69,.42), rgba(233,155,69,0) 62%)";
+  const coreGradient = isWater
+    ? `radial-gradient(circle at 50% 65%, ${color.flameCore}, rgba(114,150,168,.30) 55%, transparent 78%)`
+    : `radial-gradient(circle at 50% 65%, ${color.flameCore}, rgba(233,155,69,.25) 70%, transparent)`;
   // Escape closes the overlay — previously the ✕ button was the only way out.
   React.useEffect(() => {
     if (!showAbout) return;
@@ -193,10 +203,10 @@ export function RoomScene({
             left: "50%",
             marginLeft: -260,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(233,155,69,.42), rgba(233,155,69,0) 62%)",
+            background: haloGradient,
             opacity: glowOpacity,
             animation: glowAnim,
-            transition: "opacity .35s ease",
+            transition: "background 1.4s ease, opacity .35s ease",
             pointerEvents: "none",
           }}
         />
@@ -219,10 +229,10 @@ export function RoomScene({
             width: 60,
             height: 80,
             borderRadius: "50% 50% 40% 40%",
-            background: `radial-gradient(circle at 50% 65%, ${color.flameCore}, rgba(233,155,69,.25) 70%, transparent)`,
+            background: coreGradient,
             opacity: glowOpacity,
             animation: glowAnim,
-            transition: "opacity .35s ease",
+            transition: "background 1.4s ease, opacity .35s ease",
           }}
         />
       </div>

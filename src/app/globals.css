@@ -357,8 +357,19 @@ body {
   }
 }
 
+/* SCENE 10 — night 7 swells "골드 앰버 2회 융기", not once. */
 .flame-field--swell {
-  animation: flame-swell 1.6s var(--ease-soft) both;
+  animation: flame-swell 1.6s var(--ease-soft) 2 both;
+}
+
+/* SCENE 12 — the app-side flame's silhouette after night 30 (물의 기질): taller
+ * and wavier at the edges. Colour/rhythm still come from `--flame-intensity`
+ * and the `.flame--breathe`/`.flame--slowing` classes — this only reshapes the
+ * body, and only inside the app; RoomScene's physical object never changes
+ * shape (스토리보드 5장 제외 목록). */
+.flame--water {
+  aspect-ratio: 0.62;
+  border-radius: 46% 54% 38% 62% / 72% 66% 34% 28%;
 }
 
 /* ==========================================================================

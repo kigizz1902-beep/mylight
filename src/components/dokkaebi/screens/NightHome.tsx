@@ -2,8 +2,130 @@ import type { ChangeEvent, CSSProperties, ReactNode } from "react";
 
 import { Flame } from "@/components/dokkaebi/Flame";
 import { color, GUTTER, radius, space, text } from "@/lib/design";
-import { glassButton, glassPanel, innerGlow, statusDot, statusTag } from "@/lib/glass";
+import { glassButton, glassPanel, glassPill, innerGlow, statusDot, statusTag } from "@/lib/glass";
 import type { Mood } from "@/lib/dokkaebi";
+
+/** SCENE 4's four choices, in the storyboard's fixed order. */
+const EMOTION_CHOICES = [
+  "기분 좋은 일이 있었어",
+  "조금 지쳤어",
+  "마음이 복잡해",
+  "그냥 조용히 있고 싶어",
+] as const;
+
+/**
+ * SCENE 4 — "오늘은 어떤 마음으로 돌아왔어?" A small card under the flame, not a
+ * blocking popup (스토리보드 6장 조건 1) — 조명 사용과 밝기 조절은 이 카드가 떠 있는
+ * 동안에도 그대로 가능해야 하므로, Living Card 안에서 slider와 함께 렌더링된다.
+ */
+function EmotionQuestionCard({
+  onAnswer,
+  onSkip,
+}: {
+  onAnswer: (choice: string) => void;
+  onSkip: () => void;
+}) {
+  return (
+    <div
+      style={{
+        ...glassPanel({ tone: "nested", radius: radius.md, padding: space[3] }),
+        width: "100%",
+        marginTop: space[4],
+        display: "flex",
+        flexDirection: "column",
+        gap: space[2],
+        textAlign: "left",
+      }}
+    >
+      <p style={text.body}>오늘은 어떤 마음으로 돌아왔어?</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: space[2] }}>
+        {EMOTION_CHOICES.map((choice) => (
+          <button
+            key={choice}
+            type="button"
+            onClick={() => onAnswer(choice)}
+            className="pressable"
+            style={glassPill(false)}
+          >
+            {choice}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={onSkip}
+        style={{
+          ...text.meta,
+          alignSelf: "flex-end",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+        }}
+      >
+        다음에 말할게
+      </button>
+    </div>
+  );
+}
+
+/** SCENE 7's three choices, in the storyboard's fixed order. */
+const FOLLOW_UP_CHOICES = ["조금 편해졌어", "아직 그대로야", "그냥 말없이 쉬고 싶어"] as const;
+
+/**
+ * SCENE 7 — "아까 지쳤다고 했지. 지금은 어때?" Only appears once the FR-04 bedtime
+ * pulse has already played, and only if SCENE 4 was ever answered — this is the
+ * moment the storyboard calls "관계가 되는 결정적 장면" (the first conversation
+ * being remembered later the same night).
+ */
+function FollowUpQuestionCard({
+  onAnswer,
+  onSkip,
+}: {
+  onAnswer: (choice: string) => void;
+  onSkip: () => void;
+}) {
+  return (
+    <div
+      style={{
+        ...glassPanel({ tone: "nested", radius: radius.md, padding: space[3] }),
+        width: "100%",
+        marginTop: space[4],
+        display: "flex",
+        flexDirection: "column",
+        gap: space[2],
+        textAlign: "left",
+      }}
+    >
+      <p style={text.body}>아까 지쳤다고 했지. 지금은 어때?</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: space[2] }}>
+        {FOLLOW_UP_CHOICES.map((choice) => (
+          <button
+            key={choice}
+            type="button"
+            onClick={() => onAnswer(choice)}
+            className="pressable"
+            style={glassPill(false)}
+          >
+            {choice}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={onSkip}
+        style={{
+          ...text.meta,
+          alignSelf: "flex-end",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+        }}
+      >
+        말없이 쉴게
+      </button>
+    </div>
+  );
+}
 
 export interface WeekPoint {
   /** Night label, e.g. "12번째 밤" — names the highlighted point in text (§16.2). */
@@ -44,6 +166,21 @@ interface NightHomeProps {
   togglePower: () => void;
   onBrightness: (e: ChangeEvent<HTMLInputElement>) => void;
   openLog: () => void;
+  /** SCENE 4 — shown only while unasked this session; a skip keeps the light usable. */
+  showEmotionQuestion: boolean;
+  onAnswerEmotion: (choice: string) => void;
+  onSkipEmotionQuestion: () => void;
+  /** SCENE 7 — shown a beat after the FR-04 bedtime pulse, only if SCENE 4 was ever answered. */
+  showFollowUpQuestion: boolean;
+  onAnswerFollowUp: (choice: string) => void;
+  onSkipFollowUp: () => void;
+  /** SCENE 12 — "water" after night 30 gives the app-side flame its wavier silhouette. */
+  flameTemperament?: "none" | "water";
+  /**
+   * SCENE 12-C's two independent sentences, once the app-side reveal has
+   * played (null beforehand, and null again if there's nothing to say yet).
+   */
+  temperament: { weatherSentence: string; brightnessSentence: string | null; closingLine: string } | null;
 }
 
 /** §15.2 — 40–70ms between cards, and never more than a handful in sequence. */
@@ -163,6 +300,14 @@ export function NightHome({
   togglePower,
   onBrightness,
   openLog,
+  showEmotionQuestion,
+  onAnswerEmotion,
+  onSkipEmotionQuestion,
+  showFollowUpQuestion,
+  onAnswerFollowUp,
+  onSkipFollowUp,
+  flameTemperament = "none",
+  temperament,
 }: NightHomeProps) {
   const longestNight = week.reduce<WeekPoint | null>(
     (best, point) => (best === null || point.minutes > best.minutes ? point : best),
@@ -232,12 +377,22 @@ export function NightHome({
           </span>
 
           <div style={{ flex: 1, display: "grid", placeItems: "center", minHeight: 148 }}>
-            <Flame size={82} intensity={mood.intensity} motion={mood.motion} animation={flameAnimation} />
+            <Flame
+              size={82}
+              intensity={mood.intensity}
+              motion={mood.motion}
+              animation={flameAnimation}
+              temperament={flameTemperament}
+            />
           </div>
 
           {/* MUST 07 — the state sentence comes before any number. */}
           <p style={text.statusHeadline}>{mood.headline}</p>
           <p style={{ ...text.body, marginTop: space[2] }}>{togetherSentence}</p>
+
+          {isOn && showEmotionQuestion && (
+            <EmotionQuestionCard onAnswer={onAnswerEmotion} onSkip={onSkipEmotionQuestion} />
+          )}
 
           {isOn && (
             <div style={{ width: "100%", marginTop: space[5] }}>
@@ -269,6 +424,10 @@ export function NightHome({
                 style={{ "--pct": `${brightness}%` } as CSSProperties}
               />
             </div>
+          )}
+
+          {isOn && showFollowUpQuestion && (
+            <FollowUpQuestionCard onAnswer={onAnswerFollowUp} onSkip={onSkipFollowUp} />
           )}
         </section>
 
@@ -340,6 +499,26 @@ export function NightHome({
             <span style={{ ...text.meta, paddingTop: space[2] }}>아직 기록된 밤이 없어요</span>
           )}
         </button>
+
+        {/* ── SCENE 12-C — the two independent 기질 sentences, once revealed ──── */}
+        {temperament && (
+          <section
+            className="rise-in"
+            style={{
+              ...glassPanel({ radius: radius.lg, padding: space[5] }),
+              flex: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: space[2],
+            }}
+          >
+            <span aria-hidden style={innerGlow("rain", { strength: 0.16, corner: "top-right" })} />
+            <CardLabel>불씨의 기질</CardLabel>
+            <p style={text.body}>{temperament.weatherSentence}</p>
+            {temperament.brightnessSentence && <p style={text.body}>{temperament.brightnessSentence}</p>}
+            <p style={{ ...text.cardTitle, marginTop: space[1] }}>{temperament.closingLine}</p>
+          </section>
+        )}
 
         {/* ── §13.5 Quiet Action — exactly one, and only warm when nothing else is ── */}
         <button

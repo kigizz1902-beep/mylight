@@ -51,7 +51,7 @@ export function stageProgress(nights: number): number {
  * the app doesn't have, and `오류·연결 끊김` needs a real bridge that can drop
  * (see src/lib/light-controller.ts).
  */
-export type MoodKey = "searching" | "awake" | "winding" | "asleep" | "growth";
+export type MoodKey = "searching" | "awake" | "resting" | "winding" | "asleep" | "growth";
 
 export interface Mood {
   key: MoodKey;
@@ -74,9 +74,30 @@ interface MoodInput {
   bedtimeAck: boolean;
   /** True while a stage change is being announced, so the flame swells once. */
   celebrating?: boolean;
+  /**
+   * This session's answer to the SCENE 4 emotion question, or null if unasked/
+   * skipped. Only "조금 지쳤어" has a defined resting response in the A-version
+   * MUST scope (SCENE 5) — other choices fall through to the ordinary `awake`
+   * mood rather than being faked.
+   */
+  tonightEmotionChoice?: string | null;
+  /**
+   * True once the SCENE 7 bedtime follow-up ("아까 지쳤다고 했지. 지금은 어때?")
+   * has been answered — any of the three choices, none scored as a failure —
+   * so the winding headline can speak as a reply rather than the generic default.
+   */
+  followUpAnswered?: boolean;
 }
 
-export function moodFor({ nights, isOn, brightness, bedtimeAck, celebrating = false }: MoodInput): Mood {
+export function moodFor({
+  nights,
+  isOn,
+  brightness,
+  bedtimeAck,
+  celebrating = false,
+  tonightEmotionChoice = null,
+  followUpAnswered = false,
+}: MoodInput): Mood {
   // `isOn` is checked before the night count, because the flame is already lit
   // during the naming step while `nights` is still 0 — being unnamed doesn't make
   // it 연결 전 once it has woken.
@@ -101,6 +122,18 @@ export function moodFor({ nights, isOn, brightness, bedtimeAck, celebrating = fa
   }
 
   if (celebrating) {
+    // SCENE 10 — night 7 reads as "곁에 있음", not a new identity forming, so it
+    // stays warm amber rather than the lilac 성장 tone the later stages use.
+    if (nights === 7) {
+      return {
+        key: "growth",
+        tag: "곁에 있음",
+        headline: "당신 곁이 조금 익숙해졌어요",
+        intensity: 0.85,
+        motion: "swell",
+        tone: "amber",
+      };
+    }
     return {
       key: "growth",
       tag: "기억이 자라는 중",
@@ -117,8 +150,23 @@ export function moodFor({ nights, isOn, brightness, bedtimeAck, celebrating = fa
     return {
       key: "winding",
       tag: "잠들 준비",
-      headline: "오늘의 빛을 접고 있어요",
+      headline: followUpAnswered ? "그럼 오늘은 이 빛으로 함께 있을게" : "오늘의 빛을 접고 있어요",
       intensity: 0.28,
+      motion: "slowing",
+      tone: "amber",
+    };
+  }
+
+  // SCENE 5 — "알겠어. 오늘은 천천히 곁에 있을게." The light answering "조금 지쳤어"
+  // reads as a reply only for the rest of *this* night, so it's gated on tonight's
+  // choice rather than the permanently-remembered firstEmotionAnswer (that one
+  // stays reserved for the SCENE 7 recall question).
+  if (tonightEmotionChoice === "조금 지쳤어") {
+    return {
+      key: "resting",
+      tag: "곁에 있음",
+      headline: "오늘은 천천히 곁에 있을게",
+      intensity: 0.24 + (brightness / 100) * 0.28,
       motion: "slowing",
       tone: "amber",
     };
@@ -147,6 +195,7 @@ export function hasJong(word: string): boolean {
 
 export const gwa = (word: string) => word + (hasJong(word) ? "과" : "와");
 export const iga = (word: string) => word + (hasJong(word) ? "이" : "가");
+export const neun = (word: string) => word + (hasJong(word) ? "은" : "는");
 
 export const ord = (n: number) => (n === 1 ? "첫 번째" : `${n}번째`);
 
@@ -168,6 +217,61 @@ export interface NightSession {
   minutes: number;
   minBrightness: number;
   ack: boolean;
+  /** Whether it was raining outside during this night — feeds SCENE 12's weather sentence. */
+  rainy: boolean;
+  /** Whether the user spent most of this night at a low living brightness — feeds SCENE 12's preference sentence. */
+  lowBrightness: boolean;
+}
+
+/**
+ * SCENE 12-A's deterministic weather trail for nights the test tool jumps
+ * through in bulk (nights actually lived through one at a time get their real
+ * weather from `state.rainy` instead — see `togglePower` in use-dokkaebi-app.ts).
+ * Fixed so re-running the same jump always retells the same story: 14 rainy
+ * nights out of 30 (스토리보드 SCENE 12-C — "함께한 30번의 밤 중 14번, 비가 내렸어요").
+ */
+const RAINY_NIGHTS = new Set([1, 3, 6, 8, 10, 13, 15, 18, 20, 22, 25, 27, 29, 30]);
+
+export function isRainyNight(n: number): boolean {
+  return RAINY_NIGHTS.has(n);
+}
+
+/**
+ * Deterministic low-brightness trail for the same jumped nights — a majority
+ * (20 of 30), matching SCENE 12-C's "대부분의 밤, 낮은 빛에 오래 머물렀어요".
+ */
+export function isLowBrightnessNight(n: number): boolean {
+  return n % 3 !== 0;
+}
+
+/**
+ * SCENE 12-C's two sentences —날씨 and 밝기 선호 — computed independently so
+ * neither implies the other (v6 변경사항 #4: 인과관계가 섞이지 않게 두 문장을 분리).
+ */
+export function getWeatherSummarySentence(sessions: NightSession[]): string {
+  const rainyNights = sessions.filter((s) => s.rainy).length;
+  return `함께한 ${sessions.length}번의 밤 중 ${rainyNights}번, 비가 내렸어요.`;
+}
+
+/**
+ * Only "낮은 빛" has a defined sentence in the A-version MUST scope — "중간"/
+ * "밝은 편" are SHOULD scope and deliberately return null rather than being faked.
+ */
+export function getBrightnessPreferenceSentence(sessions: NightSession[]): string | null {
+  if (sessions.length === 0) return null;
+  const lowNights = sessions.filter((s) => s.lowBrightness).length;
+  return lowNights > sessions.length / 2 ? "그리고 당신은 대부분의 밤, 낮은 빛에 오래 머물렀어요." : null;
+}
+
+/**
+ * SCENE 10's "자주 쓰는 밝기에 가까운 결로 깨어납니다" — a concrete slider value
+ * derived from the same majority `getBrightnessPreferenceSentence` reads, so
+ * night 7's settling and night 30's sentence tell the same story.
+ */
+export function preferredBrightness(sessions: NightSession[]): number {
+  if (sessions.length === 0) return 45;
+  const lowShare = sessions.filter((s) => s.lowBrightness).length / sessions.length;
+  return lowShare > 0.5 ? 22 : 45;
 }
 
 export interface ChangeEntry {
