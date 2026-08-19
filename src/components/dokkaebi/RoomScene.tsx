@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { X } from "lucide-react";
 
 import { color, radius, space, text } from "@/lib/design";
@@ -22,16 +23,47 @@ interface RoomSceneProps {
 }
 
 /**
- * The room is *space*, so it is cool and near-black throughout (MUST 03): every
- * surface here is drawn from the night tokens, and the only warm colour in the
- * whole panel is the light the 도깨비불 casts. The two amber pane tints are that
- * same light reflected — a glow with a visible source, per MUST 04.
+ * The room is a photograph now, not drawn geometry. It still has to obey MUST 03
+ * (the room is cool, near-black space) and MUST 04 (warm light only where a
+ * visible source explains it) — which is exactly why the lamp is *not* cut out of
+ * the picture. Its spill on the wall, the fig leaves and the shelf is baked into
+ * the pixels; erase the lamp and that spill becomes light with no source.
+ *
+ * So brightness is a cross-fade between two exposures of the same frame, and the
+ * CSS layers on top only *add* to what the photograph already shows.
  */
-const WINDOW_PANES = [
-  { rainDuration: "1.9s", tint: "linear-gradient(160deg,rgba(72,98,117,.12),transparent 62%)" },
-  { rainDuration: "2.3s", tint: "linear-gradient(160deg,rgba(72,98,117,.10),transparent 62%)" },
-  { rainDuration: "2.1s", tint: "linear-gradient(20deg,rgba(233,155,69,.05),transparent 55%)" },
-  { rainDuration: "1.7s", tint: "linear-gradient(20deg,rgba(233,155,69,.06),transparent 55%)" },
+const PHOTO_RATIO = 1600 / 1011;
+
+/**
+ * Geometry is expressed in percentages of the *photograph*, never of the pane, so
+ * the rain stays inside the window and the glow stays on the lantern no matter how
+ * much of the frame the crop throws away.
+ *
+ * Measured, not eyeballed: the lit lantern's blown-out paper occupies 155×259px at
+ * (686, 332) in the 1600×1011 frame.
+ */
+const LANTERN = { x: 47.8, y: 45.6 };
+const WINDOW_GLASS = { left: 73.5, top: 0, width: 26.5, height: 45.5 };
+
+/**
+ * Brightness cross-fades two exposures of the same frame, so the two files must be
+ * pixel-identical everywhere except the lamp and its spill — same crop, same size,
+ * edited in place rather than regenerated. Any drift between them shows up as the
+ * whole room swimming while the slider moves.
+ *
+ * Until the lights-out frame lands, the lit one is graded down to stand in for it.
+ * Switch `src` and set `filter` to "none" together, or the real photo is darkened
+ * twice over.
+ */
+const OFF_PHOTO = {
+  src: "/bed.webp",
+  filter: "brightness(.40) saturate(.5) hue-rotate(-6deg) contrast(1.05)",
+};
+
+/** Two speeds, because a single rate reads as a moving texture rather than rain. */
+const RAIN_LAYERS = [
+  { duration: "1.9s", gap: 26, opacity: 0.5, streak: "rgba(150,180,205,.16)" },
+  { duration: "1.4s", gap: 17, opacity: 0.35, streak: "rgba(150,180,205,.10)" },
 ];
 
 const ABOUT_CARDS = [
@@ -89,153 +121,123 @@ export function RoomScene({
         flex: 1,
         position: "relative",
         overflow: "hidden",
-        background: `radial-gradient(120% 90% at 62% 78%, ${color.night850}, ${color.night950} 70%)`,
+        // cq units below measure this pane, so the photograph's cover maths never
+        // has to guess at the viewport or at the 520px shell beside it.
+        containerType: "size",
+        background: color.night950,
       }}
     >
+      {/* The photograph is pinned to its right edge, because the window is the one
+        * element the scene cannot lose — rain, weather and SCENE 1–2 all read
+        * through it. On a narrower screen the crop eats the left of the frame (bed
+        * frame, wall lamp) instead, which costs the scene nothing. */}
       <div
         style={{
           position: "absolute",
-          left: "6%",
-          top: "7%",
-          width: 300,
-          height: 390,
-          borderRadius: "8px 8px 4px 4px",
-          background: color.night900,
-          border: `1px solid ${color.glassBorderSoft}`,
-          boxShadow: "var(--shadow-card), inset 0 0 0 1px rgba(255,255,255,.02)",
-          padding: 14,
-          boxSizing: "border-box",
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gridTemplateRows: "1fr 1fr",
-          gap: space[3],
-        }}
-      >
-        {WINDOW_PANES.map((pane, i) => (
-          <div
-            key={i}
-            style={{
-              position: "relative",
-              overflow: "hidden",
-              borderRadius: 3,
-              background: `linear-gradient(180deg, ${color.night850}, ${color.night950})`,
-              boxShadow: "inset 0 0 22px rgba(0,0,0,.7)",
-            }}
-          >
-            <div
-              aria-hidden
-              style={{
-                position: "absolute",
-                inset: 0,
-                backgroundImage: "repeating-linear-gradient(102deg,rgba(120,150,175,.12) 0 1px,transparent 1px 24px)",
-                animation: `rainfall ${pane.rainDuration} linear infinite`,
-                opacity: rainOpacity,
-                transition: "opacity .5s ease",
-              }}
-            />
-            <div aria-hidden style={{ position: "absolute", inset: 0, background: pane.tint }} />
-          </div>
-        ))}
-      </div>
-
-      {/* Window sill */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: "calc(6% - 14px)",
-          top: "calc(7% + 390px)",
-          width: 328,
-          height: 12,
-          borderRadius: 2,
-          background: `linear-gradient(180deg, ${color.night800}, ${color.night900})`,
-          boxShadow: "0 10px 24px rgba(0,0,0,.55)",
-        }}
-      />
-
-      {/* Floor and table */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: 0,
+          top: "50%",
           right: 0,
-          bottom: 0,
-          height: "34%",
-          background: `linear-gradient(180deg, ${color.night900}, ${color.night950})`,
-        }}
-      />
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: "50%",
-          bottom: "34%",
-          width: 520,
-          height: 14,
-          marginLeft: -260,
-          borderRadius: 3,
-          background: color.night800,
-        }}
-      />
-
-      {/* The craft object and the light it casts — the only warmth in the room. */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          bottom: "calc(34% + 14px)",
-          marginLeft: -90,
-          width: 180,
-          height: 220,
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "center",
+          transform: "translateY(-50%)",
+          width: `max(100cqw, ${(PHOTO_RATIO * 100).toFixed(2)}cqh)`,
+          aspectRatio: "1600 / 1011",
         }}
       >
+        <Image src={OFF_PHOTO.src} alt="" fill priority sizes="100vw" style={{ objectFit: "cover", filter: OFF_PHOTO.filter }} />
+
+        {/* Dimming is a cross-fade between two exposures of the same frame rather
+          * than a grey wash over one, so half-brightness still looks photographed. */}
+        <Image
+          src="/bed.webp"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          style={{ objectFit: "cover", opacity: glowOpacity, transition: "opacity .45s ease" }}
+        />
+
+        {/* Rain belongs to the glass, so it is clipped to the window rather than
+          * drifting over the whole room. */}
         <div
           aria-hidden
           style={{
             position: "absolute",
-            bottom: -40,
-            width: 520,
-            height: 420,
-            left: "50%",
-            marginLeft: -260,
+            left: `${WINDOW_GLASS.left}%`,
+            top: `${WINDOW_GLASS.top}%`,
+            width: `${WINDOW_GLASS.width}%`,
+            height: `${WINDOW_GLASS.height}%`,
+            overflow: "hidden",
+            opacity: rainOpacity,
+            transition: "opacity .6s ease",
+            pointerEvents: "none",
+          }}
+        >
+          {RAIN_LAYERS.map((layer) => (
+            <div
+              key={layer.duration}
+              style={{
+                position: "absolute",
+                inset: 0,
+                backgroundImage: `repeating-linear-gradient(100deg, ${layer.streak} 0 1px, transparent 1px ${layer.gap}px)`,
+                animation: `rainfall ${layer.duration} linear infinite`,
+                opacity: layer.opacity,
+              }}
+            />
+          ))}
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(72,98,117,.20), transparent 72%)" }} />
+        </div>
+
+        {/* The light the 도깨비불 casts. `screen` so these layers *add* to the
+          * photograph's own light instead of painting a flat disc over it. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: `${LANTERN.x}%`,
+            top: `${LANTERN.y}%`,
+            width: "36%",
+            aspectRatio: "1 / 1",
+            transform: "translate(-50%, -50%)",
             borderRadius: "50%",
             background: haloGradient,
             opacity: glowOpacity,
             animation: glowAnim,
             transition: "background 1.4s ease, opacity .35s ease",
+            mixBlendMode: "screen",
             pointerEvents: "none",
           }}
         />
         <div
           aria-hidden
           style={{
-            position: "relative",
-            width: 120,
-            height: 150,
-            borderRadius: "60px 60px 26px 26px",
-            background: `linear-gradient(180deg, ${color.night800}, ${color.night950})`,
-            boxShadow: "inset 0 -20px 40px rgba(0,0,0,.6)",
-          }}
-        />
-        <div
-          aria-hidden
-          style={{
             position: "absolute",
-            bottom: 56,
-            width: 60,
-            height: 80,
-            borderRadius: "50% 50% 40% 40%",
+            left: `${LANTERN.x}%`,
+            top: `${LANTERN.y}%`,
+            width: "11%",
+            height: "26%",
+            transform: "translate(-50%, -50%)",
+            borderRadius: "50% 50% 42% 42%",
             background: coreGradient,
             opacity: glowOpacity,
             animation: glowAnim,
             transition: "background 1.4s ease, opacity .35s ease",
+            mixBlendMode: "screen",
+            pointerEvents: "none",
           }}
         />
       </div>
+
+      {/* The photograph is brighter than the drawn room it replaced, so the glass
+        * panels need their ground darkened back down where they actually sit. */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(92% 72% at 50% 54%, transparent, rgba(6,8,12,.5) 100%)," +
+            "linear-gradient(180deg, rgba(6,8,12,.44), transparent 24%, transparent 68%, rgba(6,8,12,.52))",
+        }}
+      />
 
       {/* System Card (§7.3E) — the technical readout, so the quietest surface here. */}
       <div
