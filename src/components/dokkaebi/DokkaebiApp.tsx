@@ -28,7 +28,8 @@ import { SettingsScreen } from "@/components/dokkaebi/screens/SettingsScreen";
 
 /** No real light/hardware integration yet — see src/lib/light-controller.ts. */
 const OUTPUT_MODE_LABEL = "가상 출력";
-const SHOW_TEST_PANEL = process.env.NODE_ENV !== "production";
+/** Kept on in production too — the deployed link doubles as the demo rig. */
+const SHOW_TEST_PANEL = true;
 
 /** §13.4 — the memory card covers the last seven nights. */
 const WEEK_LENGTH = 7;

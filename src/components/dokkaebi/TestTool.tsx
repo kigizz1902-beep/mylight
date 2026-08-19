@@ -13,9 +13,10 @@ interface TestToolProps {
 }
 
 /**
- * Development-only time machine (never rendered in production). Styled as the
- * quietest thing on the page — it is scaffolding, not part of the product, so it
- * gets a dashed border and no glow of any kind.
+ * Time machine for jumping between nights. Rendered in production as well, since
+ * the deployed link is how the piece gets demoed. Styled as the quietest thing on
+ * the page — it is scaffolding, not part of the product, so it gets a dashed
+ * border and no glow of any kind.
  */
 const button: CSSProperties = {
   ...glassButton("ghost"),
