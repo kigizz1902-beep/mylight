@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { color, radius, space, text } from "@/lib/design";
+import { color, radius, space } from "@/lib/design";
 import { glassButton } from "@/lib/glass";
 
 interface TestToolProps {
@@ -39,7 +39,6 @@ export function TestTool({ rainy, nextNight, jumpSeven, jumpThirty, toggleRain, 
         border: `1px dashed ${color.glassBorderSoft}`,
       }}
     >
-      <span style={{ ...text.label, paddingRight: space[1] }}>DEV</span>
       <button type="button" onClick={nextNight} style={button}>
         다음 밤으로
       </button>
