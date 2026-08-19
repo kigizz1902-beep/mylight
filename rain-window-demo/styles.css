@@ -1,0 +1,167 @@
+:root {
+  color-scheme: dark;
+
+  /* 2800 × 2160 이미지에서 창문 안쪽 유리의 위치 */
+  --window-left: 78.35%;
+  --window-top: 0%;
+  --window-width: 18.9%;
+  --window-height: 39.2%;
+
+  --lamp-fade-duration: 1800ms;
+  --scene-radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 3vw, 40px);
+  background: #070b13;
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.demo {
+  width: min(100%, 1440px);
+}
+
+.scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 35 / 27;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--scene-radius);
+  background: #101a2a;
+  box-shadow: 0 28px 80px rgb(0 0 0 / 45%);
+}
+
+.scene-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+.scene-image--off {
+  z-index: 1;
+}
+
+.scene-image--on {
+  z-index: 2;
+  opacity: 1;
+  transition: opacity var(--lamp-fade-duration) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scene.is-lamp-off .scene-image--on {
+  opacity: 0;
+}
+
+.rain-window {
+  position: absolute;
+  z-index: 3;
+  left: var(--window-left);
+  top: var(--window-top);
+  width: var(--window-width);
+  height: var(--window-height);
+  overflow: hidden;
+  pointer-events: none;
+
+  /* 프레임 경계에서 빗줄기가 딱 잘려 보이지 않게 만든다. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 88%) 0%,
+    #000 8%,
+    #000 94%,
+    rgb(0 0 0 / 72%) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 88%) 0%,
+    #000 8%,
+    #000 94%,
+    rgb(0 0 0 / 72%) 100%
+  );
+  opacity: 1;
+  transition: opacity 700ms ease;
+}
+
+.scene.is-rain-paused .rain-window {
+  opacity: 0;
+}
+
+#rain-canvas,
+.window-haze {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#rain-canvas {
+  filter: blur(0.25px);
+}
+
+.window-haze {
+  background:
+    radial-gradient(circle at 30% 18%, rgb(170 205 235 / 6%), transparent 34%),
+    linear-gradient(110deg, transparent 35%, rgb(190 220 245 / 4%) 52%, transparent 70%);
+  mix-blend-mode: screen;
+}
+
+.controls {
+  position: absolute;
+  z-index: 4;
+  right: clamp(10px, 1.8vw, 24px);
+  bottom: clamp(10px, 1.8vw, 24px);
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.scene:is(:hover, :focus-within) .controls {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.control-button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 999px;
+  color: rgb(255 255 255 / 88%);
+  background: rgb(8 13 23 / 62%);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 24%);
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+}
+
+.control-button:hover {
+  background: rgb(15 23 38 / 80%);
+}
+
+.control-button:focus-visible {
+  outline: 2px solid #f1c48f;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-image--on,
+  .rain-window,
+  .controls {
+    transition-duration: 1ms;
+  }
+}
