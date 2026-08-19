@@ -4,6 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { X } from "lucide-react";
 
+import { RainWindow } from "@/components/dokkaebi/RainWindow";
 import { color, radius, space, text } from "@/lib/design";
 import { glassButton, glassPanel, glassScrim, innerGlow } from "@/lib/glass";
 
@@ -29,42 +30,27 @@ interface RoomSceneProps {
  * the picture. Its spill on the wall, the fig leaves and the shelf is baked into
  * the pixels; erase the lamp and that spill becomes light with no source.
  *
- * So brightness is a cross-fade between two exposures of the same frame, and the
- * CSS layers on top only *add* to what the photograph already shows.
+ * So brightness is a cross-fade between two exposures of the same frame: the lamp
+ * goes out in the photograph itself, spill and all, and nothing is drawn on top
+ * pretending to be light.
  */
-const PHOTO_RATIO = 1600 / 1011;
+const PHOTO = { width: 2800, height: 2160, ratio: 2800 / 2160 };
+
+/** The same frame, lit and unlit. Order matters: `off` is the plate, `on` fades in over it. */
+const PHOTO_OFF = "/re/bed_2800x2160_light_off.webp";
+const PHOTO_ON = "/re/bed_2800x2160_light_on.webp";
 
 /**
- * Geometry is expressed in percentages of the *photograph*, never of the pane, so
- * the rain stays inside the window and the glow stays on the lantern no matter how
- * much of the frame the crop throws away.
+ * Percentage of the *photograph*, not the pane, so the glow stays on the lantern
+ * however much of the frame the crop throws away.
  *
- * Measured, not eyeballed: the lit lantern's blown-out paper occupies 155×259px at
- * (686, 332) in the 1600×1011 frame.
+ * Read off a 5% grid laid over the lit frame: the paper body runs x 41.5–53.5%,
+ * y 32.5–54%, and the wire legs carry on to y 57.5%. `core` is the paper only —
+ * stretch it past 54% and the light starts coming out of the legs and the shelf.
  */
-const LANTERN = { x: 47.8, y: 45.6 };
-const WINDOW_GLASS = { left: 73.5, top: 0, width: 26.5, height: 45.5 };
-
-/**
- * Brightness cross-fades two exposures of the same frame, so the two files must be
- * pixel-identical everywhere except the lamp and its spill — same crop, same size,
- * edited in place rather than regenerated. Any drift between them shows up as the
- * whole room swimming while the slider moves.
- *
- * Until the lights-out frame lands, the lit one is graded down to stand in for it.
- * Switch `src` and set `filter` to "none" together, or the real photo is darkened
- * twice over.
- */
-const OFF_PHOTO = {
-  src: "/bed.webp",
-  filter: "brightness(.40) saturate(.5) hue-rotate(-6deg) contrast(1.05)",
-};
-
-/** Two speeds, because a single rate reads as a moving texture rather than rain. */
-const RAIN_LAYERS = [
-  { duration: "1.9s", gap: 26, opacity: 0.5, streak: "rgba(150,180,205,.16)" },
-  { duration: "1.4s", gap: 17, opacity: 0.35, streak: "rgba(150,180,205,.10)" },
-];
+const LANTERN = { x: 47.5, y: 43.25 };
+const CORE = { width: 12, height: 21.5 };
+const HALO_WIDTH = 32;
 
 const ABOUT_CARDS = [
   {
@@ -127,26 +113,25 @@ export function RoomScene({
         background: color.night950,
       }}
     >
-      {/* The photograph is pinned to its right edge, because the window is the one
-        * element the scene cannot lose — rain, weather and SCENE 1–2 all read
-        * through it. On a narrower screen the crop eats the left of the frame (bed
-        * frame, wall lamp) instead, which costs the scene nothing. */}
+      {/* Pinned to its right edge so the window survives the crop on a narrower
+        * screen — the weather has to read through it — and the left of the frame
+        * goes instead. */}
       <div
         style={{
           position: "absolute",
           top: "50%",
           right: 0,
           transform: "translateY(-50%)",
-          width: `max(100cqw, ${(PHOTO_RATIO * 100).toFixed(2)}cqh)`,
-          aspectRatio: "1600 / 1011",
+          width: `max(100cqw, ${(PHOTO.ratio * 100).toFixed(2)}cqh)`,
+          aspectRatio: `${PHOTO.width} / ${PHOTO.height}`,
         }}
       >
-        <Image src={OFF_PHOTO.src} alt="" fill priority sizes="100vw" style={{ objectFit: "cover", filter: OFF_PHOTO.filter }} />
+        <Image src={PHOTO_OFF} alt="" fill priority sizes="100vw" style={{ objectFit: "cover" }} />
 
-        {/* Dimming is a cross-fade between two exposures of the same frame rather
-          * than a grey wash over one, so half-brightness still looks photographed. */}
+        {/* Dimming is a cross-fade between the two exposures rather than a grey wash
+          * over one, so half-brightness still looks photographed. */}
         <Image
-          src="/bed.webp"
+          src={PHOTO_ON}
           alt=""
           fill
           priority
@@ -154,36 +139,7 @@ export function RoomScene({
           style={{ objectFit: "cover", opacity: glowOpacity, transition: "opacity .45s ease" }}
         />
 
-        {/* Rain belongs to the glass, so it is clipped to the window rather than
-          * drifting over the whole room. */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: `${WINDOW_GLASS.left}%`,
-            top: `${WINDOW_GLASS.top}%`,
-            width: `${WINDOW_GLASS.width}%`,
-            height: `${WINDOW_GLASS.height}%`,
-            overflow: "hidden",
-            opacity: rainOpacity,
-            transition: "opacity .6s ease",
-            pointerEvents: "none",
-          }}
-        >
-          {RAIN_LAYERS.map((layer) => (
-            <div
-              key={layer.duration}
-              style={{
-                position: "absolute",
-                inset: 0,
-                backgroundImage: `repeating-linear-gradient(100deg, ${layer.streak} 0 1px, transparent 1px ${layer.gap}px)`,
-                animation: `rainfall ${layer.duration} linear infinite`,
-                opacity: layer.opacity,
-              }}
-            />
-          ))}
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(72,98,117,.20), transparent 72%)" }} />
-        </div>
+        <RainWindow opacity={rainOpacity} />
 
         {/* The light the 도깨비불 casts. `screen` so these layers *add* to the
           * photograph's own light instead of painting a flat disc over it. */}
@@ -193,7 +149,7 @@ export function RoomScene({
             position: "absolute",
             left: `${LANTERN.x}%`,
             top: `${LANTERN.y}%`,
-            width: "36%",
+            width: `${HALO_WIDTH}%`,
             aspectRatio: "1 / 1",
             transform: "translate(-50%, -50%)",
             borderRadius: "50%",
@@ -211,8 +167,8 @@ export function RoomScene({
             position: "absolute",
             left: `${LANTERN.x}%`,
             top: `${LANTERN.y}%`,
-            width: "11%",
-            height: "26%",
+            width: `${CORE.width}%`,
+            height: `${CORE.height}%`,
             transform: "translate(-50%, -50%)",
             borderRadius: "50% 50% 42% 42%",
             background: coreGradient,
@@ -248,17 +204,17 @@ export function RoomScene({
           // top-left of the room.
           ...glassPanel({ radius: radius.md, padding: space[5], tone: "quiet" }),
           position: "absolute",
-          right: space[6],
+          left: space[6],
           top: space[6],
           maxWidth: "min(320px, calc(100% - 48px))",
           display: "flex",
           flexDirection: "column",
-          alignItems: "flex-end",
+          alignItems: "flex-start",
           gap: space[2],
-          textAlign: "right",
+          textAlign: "left",
         }}
       >
-        <span style={text.label}>생활 공간 시뮬레이션 · {outputModeLabel}</span>
+        <span style={text.label}>나의 방 · {outputModeLabel}</span>
         <span style={{ ...text.meta, color: color.textSecondary }}>{roomStatus}</span>
         <button
           type="button"
@@ -365,7 +321,7 @@ export function RoomScene({
               <span aria-hidden style={innerGlow("blue", { strength: 0.14, corner: "top-right" })} />
               <span style={text.label}>지금 보고 있는 화면</span>
               <span style={{ ...text.body, fontSize: 13.5, lineHeight: 1.8 }}>
-                왼쪽은 휴대폰 앱, 오른쪽은 생활 공간 시뮬레이션입니다. 실제 전구·서버·날짜 없이 시간을 압축해,{" "}
+                왼쪽은 휴대폰 앱, 오른쪽은 나의 방입니다. 실제 전구·서버·날짜 없이 시간을 압축해,{" "}
                 <span style={{ color: color.textPrimary }}>앱 조작 → 공간의 빛 반응 → 시간의 축적</span>이 하나의 경험으로 이해되는지를 검증합니다.
               </span>
             </div>
