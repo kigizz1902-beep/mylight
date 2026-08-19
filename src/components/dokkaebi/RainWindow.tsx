@@ -10,15 +10,15 @@ import * as React from "react";
 export const RAIN_WINDOW = { left: 78.35, top: 0, width: 18.9, height: 39.2 };
 
 const CONFIG = {
-  streakCount: 74,
-  beadCount: 16,
-  wind: 24,
-  minSpeed: 250,
-  maxSpeed: 510,
-  minLength: 10,
-  maxLength: 34,
-  minOpacity: 0.08,
-  maxOpacity: 0.28,
+  streakCount: 130,
+  beadCount: 26,
+  wind: 34,
+  minSpeed: 340,
+  maxSpeed: 700,
+  minLength: 14,
+  maxLength: 48,
+  minOpacity: 0.12,
+  maxOpacity: 0.4,
 };
 
 interface Streak {
