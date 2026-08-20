@@ -16,7 +16,12 @@ interface FlameProps {
    */
   animation?: string;
   style?: CSSProperties;
-  /** SCENE 12 — "water" after night 30 gives the app-side flame a taller, wavier silhouette. Color/rhythm still come from intensity/motion; this only reshapes the body. */
+  /**
+   * SCENE 12 — "water" after night 30 gives the app-side flame a taller, wavier
+   * silhouette and a cool blue light, so the accumulated weather reads as both
+   * 형태와 색 (스토리보드 §기질). Rhythm and brightness still come from
+   * motion/intensity.
+   */
   temperament?: "none" | "water";
 }
 
@@ -42,7 +47,12 @@ export function Flame({ size = 82, intensity, motion, animation, style, temperam
   return (
     <div
       aria-hidden
-      className={`flame-field${motion === "swell" ? " flame-field--swell" : ""}`}
+      // The blue tint lives on the field so the halo is tinted with the body —
+      // the halo is a sibling of `.flame`, not a child, so a class on the body
+      // alone would leave an amber glow around a blue flame.
+      className={`flame-field${motion === "swell" ? " flame-field--swell" : ""}${
+        temperament === "water" ? " flame-field--water" : ""
+      }`}
       style={
         {
           "--flame-size": `${size}px`,

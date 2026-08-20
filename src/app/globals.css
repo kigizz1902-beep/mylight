@@ -83,6 +83,25 @@
   --flame-deep: #a95524;
   --flame-ember: #6e2f1e;
 
+  /* The same five layers as RGB triples, so the flame's light can be re-tinted
+   * as a whole (see `.flame-field--water`) instead of every gradient stop
+   * carrying a hard-coded amber. */
+  --flame-rgb-core: 255, 244, 214;
+  --flame-rgb-cream: 249, 220, 160;
+  --flame-rgb-amber: 233, 155, 69;
+  --flame-rgb-deep: 169, 85, 36;
+  --flame-rgb-ember: 110, 47, 30;
+
+  /* SCENE 12 물의 기질 — 30번째 밤 이후 앱 속 불꽃의 고유 색조(스토리보드 §기질,
+   * "함께 통과한 날씨가 형태와 색을 만든다"). 비를 머금은 불이므로 한색 계열.
+   * `amber`/`ember` are layer names here, not hues — the five names stay
+   * parallel to the warm set so one swap covers every stop. */
+  --flame-water-rgb-core: 234, 247, 255;
+  --flame-water-rgb-cream: 169, 220, 255;
+  --flame-water-rgb-amber: 90, 168, 230;
+  --flame-water-rgb-deep: 44, 96, 143;
+  --flame-water-rgb-ember: 22, 48, 79;
+
   /* Night ambience */
   --aurora-blue: #315a87;
   --aurora-indigo: #343b78;
@@ -115,6 +134,12 @@
   --shadow-card: 0 18px 50px rgba(0, 0, 0, 0.34);
   --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.07);
   --shadow-flame: 0 0 18px rgba(233, 155, 69, 0.42), 0 0 48px rgba(169, 85, 36, 0.24);
+  /* A custom property is substituted where it is declared, so this can't be
+   * written in terms of `--flame-rgb-*`: `.flame` would inherit an already-amber
+   * value and the water tint below would never reach the glow. Hence a paired
+   * token instead, overridden together with the triples. */
+  --shadow-flame-water: 0 0 18px rgba(var(--flame-water-rgb-amber), 0.42),
+    0 0 48px rgba(var(--flame-water-rgb-deep), 0.28);
 
   /* Motion */
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
@@ -283,7 +308,7 @@ body {
   width: calc(var(--flame-size, 82px) * 1.9);
   height: calc(var(--flame-size, 82px) * 1.9);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(233, 155, 69, 0.26), transparent 67%);
+  background: radial-gradient(circle, rgba(var(--flame-rgb-amber), 0.26), transparent 67%);
   filter: blur(18px);
   opacity: var(--flame-intensity, 0.7);
   transition: opacity var(--duration-normal) var(--ease-soft);
@@ -305,13 +330,17 @@ body {
    * warm area. Fading the body out instead keeps it a light source.
    */
   background:
-    radial-gradient(circle at 48% 55%, rgba(255, 244, 214, 0.92) 0 10%, rgba(255, 244, 214, 0) 27%),
+    radial-gradient(
+      circle at 48% 55%,
+      rgba(var(--flame-rgb-core), 0.92) 0 10%,
+      rgba(var(--flame-rgb-core), 0) 27%
+    ),
     radial-gradient(
       circle at 50% 54%,
-      rgba(249, 220, 160, 0.7) 0 16%,
-      rgba(233, 155, 69, 0.55) 44%,
-      rgba(169, 85, 36, 0.26) 70%,
-      rgba(110, 47, 30, 0) 93%
+      rgba(var(--flame-rgb-cream), 0.7) 0 16%,
+      rgba(var(--flame-rgb-amber), 0.55) 44%,
+      rgba(var(--flame-rgb-deep), 0.26) 70%,
+      rgba(var(--flame-rgb-ember), 0) 93%
     );
   filter: blur(0.2px);
   box-shadow: var(--shadow-flame);
@@ -362,11 +391,24 @@ body {
   animation: flame-swell 1.6s var(--ease-soft) 2 both;
 }
 
-/* SCENE 12 — the app-side flame's silhouette after night 30 (물의 기질): taller
- * and wavier at the edges. Colour/rhythm still come from `--flame-intensity`
- * and the `.flame--breathe`/`.flame--slowing` classes — this only reshapes the
- * body, and only inside the app; RoomScene's physical object never changes
- * shape (스토리보드 5장 제외 목록). */
+/* SCENE 12 — the app-side flame after night 30 (물의 기질): taller and wavier at
+ * the edges, and a cool blue instead of the common amber. 스토리보드 §기질 makes
+ * the accumulated weather decide "불꽃 형태와 색" together, so shape alone would
+ * under-tell it — the colour is what says the fire has changed over time.
+ * Rhythm and brightness still come from `--flame-intensity` and the
+ * `.flame--breathe`/`.flame--slowing` classes.
+ *
+ * App-side only. RoomScene's physical object never changes shape (스토리보드 5장
+ * 제외 목록) and keeps its own light, so the room's flame stays as it was. */
+.flame-field--water {
+  --flame-rgb-core: var(--flame-water-rgb-core);
+  --flame-rgb-cream: var(--flame-water-rgb-cream);
+  --flame-rgb-amber: var(--flame-water-rgb-amber);
+  --flame-rgb-deep: var(--flame-water-rgb-deep);
+  --flame-rgb-ember: var(--flame-water-rgb-ember);
+  --shadow-flame: var(--shadow-flame-water);
+}
+
 .flame--water {
   aspect-ratio: 0.62;
   border-radius: 46% 54% 38% 62% / 72% 66% 34% 28%;
